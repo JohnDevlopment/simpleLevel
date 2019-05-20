@@ -1,0 +1,31 @@
+#ifndef GAMEMODE_DEF_HPP_INCLUDED
+#define GAMEMODE_DEF_HPP_INCLUDED
+
+// data type enumeration
+enum MemberDataType {
+	MEMBER_DATA_NULL	= 0,
+	MEMBER_DATA_RENDERER,
+	MEMBER_DATA_INT,
+	MEMBER_DATA_SHORT,
+	MEMBER_DATA_LONG,
+	MEMBER_DATA_CHAR,
+	MEMBER_DATA_UINT,
+	MEMBER_DATA_USHORT,
+	MEMBER_DATA_ULONG,
+	MEMBER_DATA_UCHAR,
+	MEMBER_DATA_IMAGE_CLASS,
+	MEMBER_DATA_EVENT_TRIGGER,
+	MEMBER_DATA_UNDEFINED
+};
+
+// gamemode structure
+struct GameMode {
+	uint8_t gm_next;
+	uint8_t gm_cur;
+	uint8_t tm;
+	
+	void* data;
+	MemberDataType type;
+};
+
+#endif /* GAMEMODE_DEF_HPP_INCLUDED */
