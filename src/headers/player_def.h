@@ -32,6 +32,9 @@ public:
 		m_obj.unload();
 	}
 	
+	// player "tile" height
+	int CollTileHeight() {return 2;}
+	
 	// player code
 	int Main() {return 0;}
 	
