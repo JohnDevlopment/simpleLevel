@@ -89,6 +89,9 @@ public:
 	
 	// methods for derived classes //
 	
+	// height of a subdivision of the sprite
+	virtual int CollTileHeight() = 0;
+	
 	// function for the main sprite code
 	virtual int Main() = 0;
 	
