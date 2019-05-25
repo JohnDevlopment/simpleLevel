@@ -133,7 +133,7 @@ void camera::track() {
 	int sprite_right_edge = ThePlayer->m_obj.x + 32;
 	
 	// if camera is not moving or it is set to "slow down" mode, AND if the sprite is past a point
-	if ((! _Camera || _Camera == CAMERA_SCROLL_SLOW_DOWN) && sprite_right_edge >= 320) {
+	if ( /*(*/ ! _Camera || _Camera == CAMERA_SCROLL_SLOW_DOWN /*) && sprite_right_edge >= 320*/ ) {
 	  // scroll right if the player goes past the 427'th pixel in the camera region
 	  if (sprite_right_edge > (cam.x + 427))
 	  	_Camera = CAMERA_SCROLL_RIGHT;
@@ -339,10 +339,13 @@ void Background_X::move() {
 }
 
 void Background_X::check(const SDL_Rect* rect) {
-//	if ( (rect->x - BGMinX) < (m_iX + BGMinX) )
-//	  m_iX -= WIDTH;
-//	else if ((rect->x + rect->w - BGMinX) > (m_iX + BGMinX + cmul(WIDTH, 2)))
-//	  m_iX += WIDTH;
+	// if the camera is left of the background, pull the background left
+	if (rect->x < m_iX)
+	  m_iX -= WIDTH;
+	
+	// if background is to the left
+	if (m_iX < BGMinX)
+	  m_iX = BGMinX;
 }
 
 // class Background_Y
@@ -357,10 +360,11 @@ void Background_Y::move() {
 }
 
 void Background_Y::check(const SDL_Rect* rect) {
-	if (rect->y < m_iY)
-	  m_iY += rect->y - m_iY;
+	// 
+	if (rect->y < BGMinY)
+	  m_iY = BGMinY;
 	
 	// above the level itself on top of the rect
-	if (m_iY < 0 && rect->y > m_iY)
-	  m_iY = 0;
+	else if (m_iY < BGMinY && rect->y > m_iY)
+	  m_iY = BGMinY;
 }

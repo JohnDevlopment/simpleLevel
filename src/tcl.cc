@@ -34,6 +34,7 @@ static int _TclCC_Level_PlayerLoc(ClientData, Tcl_Interp*, int, Tcl_Obj* const[]
 static int _TclNsCmd_BackgroundFunctions_LoadImage(ClientData, Tcl_Interp*, int, Tcl_Obj* const[]);
 static int _TclNsCmd_BackgroundFunctions_SetColor(ClientData, Tcl_Interp*, int, Tcl_Obj* const[]);
 static int _TclNsCmd_BackgroundFunction_OffsetImage(ClientData, Tcl_Interp*, int, Tcl_Obj* const[]);
+static int _TclNsCmd_BackgroundFunction_SetSpeeds(ClientData, Tcl_Interp*, int, Tcl_Obj* const[]);
 static JColor getColorFromStr(Tcl_Interp* interp, const char* str);
 static int reportError(Tcl_Interp*);
 static void setErrorResult(Tcl_Interp*, const char*);
@@ -122,6 +123,12 @@ int TclCC_Init(PROGRAM* const program) {
 	// offsetBg
 	strcpy( (char*) vName.data(), "BackgroundFunctions::offsetImage" );
 	if ( ! Tcl_CreateObjCommand(gInterp, vName.data(), _TclNsCmd_BackgroundFunction_OffsetImage, program, nullptr ) ) {
+	  REPORTERROR(gInterp);
+	}
+
+	// setSpeeds
+	strcpy( (char*) vName.data(), "BackgroundFunctions::setSpeeds" );
+	if ( ! Tcl_CreateObjCommand(gInterp, vName.data(), _TclNsCmd_BackgroundFunction_SetSpeeds, program, nullptr) ) {
 	  REPORTERROR(gInterp);
 	}
 
@@ -257,14 +264,62 @@ return code;
 }
 
 // args: id x y
+int _TclNsCmd_BackgroundFunction_SetSpeeds(ClientData cd, Tcl_Interp* interp, int objc, Tcl_Obj* const objv[]) {
+	if (objc != 4) {
+	  setErrorResult(interp, "wrong # args: should be Level_ConfBackground speeds id x_per y_per");
+	  return TCL_ERROR;
+	}
+	
+	int iID;
+	float fX, fY;
+	
+	// id number
+	if ( Tcl_GetIntFromObj(interp, objv[1], &iID) == TCL_ERROR ) return TCL_ERROR;
+	// out of range
+	if (iID < 0 || iID >= NUM_BGS) {
+	  stringstream ss;
+	  ss << "invlaid argument to Level_ConfBackground speeds, " << iID << ", must be between 0 and " << NUM_BGS-1;
+	  setErrorResult(interp, ss.str().c_str());
+	  return TCL_ERROR;
+	}
+	
+	// x fraction
+	double temp_dArg;
+	
+	if (Tcl_GetDoubleFromObj(interp, objv[2], &temp_dArg) == TCL_ERROR)
+	  return TCL_ERROR;
+	
+	fX = temp_dArg;
+	
+	// y fraction
+	if (Tcl_GetDoubleFromObj(interp, objv[3], &temp_dArg) == TCL_ERROR)
+	  return TCL_ERROR;
+	
+	fY = temp_dArg;
+	
+	
+	using camera::BGLayers;
+	Background_Base* ptr = BGLayers[iID];
+	
+	if (ptr)
+	  delete ptr;
+	
+	// create a new background vector with the given speed factors
+	int type = (fX ? BG_X : 0) | (fY ? BG_Y : 0);
+	createNewBackgroundObj(interp, iID, type, fX, fY);
+	
+return TCL_OK;
+}
+
 int _TclNsCmd_BackgroundFunction_OffsetImage(ClientData cd, Tcl_Interp* interp, int objc, Tcl_Obj* const objv[]) {
 	if (objc != 4) {
 	  setErrorResult(interp, "wrong # args: should be Level_ConfBackground offset id x y");
 	  return TCL_ERROR;
 	}
 	
+	int iID, iX, iY;
+	
 	// id number
-	int iID;
 	if (Tcl_GetIntFromObj(interp, objv[1], &iID) == TCL_ERROR)
 	  return TCL_ERROR;
 	
@@ -276,14 +331,12 @@ int _TclNsCmd_BackgroundFunction_OffsetImage(ClientData cd, Tcl_Interp* interp, 
 	}
 	
 	// x
-	int iX;
 	if (Tcl_GetIntFromObj(interp, objv[2], &iX) == TCL_ERROR)
 	  return TCL_ERROR;
 	
 	iX *= TILE_WIDTH;
 	
 	// y
-	int iY;
 	if (Tcl_GetIntFromObj(interp, objv[3], &iY) == TCL_ERROR)
 	  return TCL_ERROR;
 	
@@ -294,31 +347,14 @@ int _TclNsCmd_BackgroundFunction_OffsetImage(ClientData cd, Tcl_Interp* interp, 
 	
 	Background_Base* pBg = BGLayers[iID];
 	if (pBg == nullptr) {
-	  int type = iX != 0 ? BG_X : 0; // if X defined
-	  type |= iY != 0 ? BG_Y : 0; // if Y defined
+	  int type = ((iX != 0) ? BG_X : 0) | ((iY != 0) ? BG_Y : 0);
 	  createNewBackgroundObj(interp, iID, type, 0, 0);
 	  pBg = BGLayers[iID]; // update pointer
 	}
 	
 	// offset the background by the values provided
-	switch (pBg->get_type()) {
-	  default:
-//	  	pBg->x() += iX;
-//	  	pBg->y() += iY;
-	  	camera::BGMinX = iX;
-	  	camera::BGMinY = iY;
-	  	break;
-	  
-	  case BG_X:
-//	  	pBg->x() += iX;
-	  	camera::BGMinX = iX;
-	  	break;
-	  
-	  case BG_Y:
-//	  	pBg->y() += iY;
-	  	camera::BGMinY = iY;
-	  	break;
-	}
+	camera::BGMinX = iX;
+	camera::BGMinY = iY;
 	
 return TCL_OK;
 }
