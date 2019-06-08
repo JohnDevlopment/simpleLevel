@@ -4,14 +4,23 @@
 #include <iostream>
 #include <type_traits>
 
+#include "global_attributes.hpp"
+
+// returns the lesser of two values
+template<typename T>
+T tmin(T op1, T op2) {
+	return (op1 < op2) ? op1 : op2;
+}
+
+// returns the greater of two values
+template<typename T>
+T tmax(T op1, T op2) {
+	return (op1 > op2) ? op1 : op2;
+}
+
 // returns the absolute value of any integer type
 template<typename T>
 T tabs(T val) {
-//	std::is_unsigned<T> isusint;
-	
-	// if it's unsigned, return
-//	if (isusint) return val;
-	
 	// return positive integer if negative, or just the value otherwise
 	return val < 0 ? -val : val;
 }

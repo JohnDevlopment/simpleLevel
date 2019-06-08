@@ -19,8 +19,8 @@ class Lock {
 	Lock() {}
 	~Lock() {}
 	
-	virtual int aquire() = 0;
-	virtual int release() = 0;
+	int aquire() {return 0;}
+	int release() {return 0;}
 };
 
 class Mutex : public Lock {
@@ -59,7 +59,7 @@ class Condition : public Lock {
 	
 	Condition();
 	~Condition();
-	Condition(Condition&& _rhs) {this->move( std::move(_rhs) );}
+	Condition(Condition&& _rhs) {this->move(std::move(_rhs));}
 	
 	// wait until a signal arrives
 	void wait(SDL_mutex* mutex, uint32_t timeout = SDL_MUTEX_MAXWAIT);

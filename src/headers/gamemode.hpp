@@ -22,6 +22,9 @@
 // event triggers
 #include "triggers.hpp"
 
+// sound api
+#include "sound.hpp"
+
 #define NUMBER_OF_GAMEMODES		5
 
 extern SDL_TimerID gTimer;
@@ -125,6 +128,12 @@ template<>
 inline void GM_SetData<EventTrigger>(GameMode* gm, EventTrigger* ptr) {
 	gm->data = ptr;
 	gm->type = MEMBER_DATA_EVENT_TRIGGER;
+}
+
+template<>
+inline void GM_SetData<MusData>(GameMode* gm, MusData* ptr) {
+	gm->data = ptr;
+	gm->type = MEMBER_DATA_MUS_DATA;
 }
 
 // clear the gamemode data pointer
