@@ -4,6 +4,8 @@
 // this gamemode's header
 #include "headers/gm_splash.hpp"
 
+#include "sound.hpp"
+
 using namespace std;
 
 // private function declarations
@@ -53,6 +55,8 @@ int _gm_splash_blit(GameMode* const gm, const PROGRAM& program) {
 return 0;
 }
 
+#include "endian.hpp"
+
 int _gm_splash_screen_load_image(GameMode* const gm, const PROGRAM& program) {
 	// set no opacity on black screen
 	BG_BLACK.set_alpha(0);
@@ -66,6 +70,8 @@ int _gm_splash_screen_load_image(GameMode* const gm, const PROGRAM& program) {
 	// set timer for splash image to be 150 frames
 	GM_ChangeGamemode(gm, 1, 150);
 	
+	// sfx
+	Sound_PlaySFX(SFXChgJump, 0);
 	
 return 0;
 }

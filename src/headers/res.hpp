@@ -11,8 +11,11 @@
    a pointer to the part in memory it's located at. Returns NULL
    upon error. A pointer returned from this must be passed to DLClose
    once it is no longer needed.
+   
+   DLOpenLib should be called if you want to use a shared library.
     */
 void* DLOpen(const char* file);
+void* DLOpenLib(const char* file);
 
 /* Closes the file referenced by the pointer argument. The pointer is no longer valid afterward.
     */
@@ -23,5 +26,6 @@ void DLClose(void* ptr);
    is put into it.
     */
 void* DLPtr(void* ptr, const char* sym, size_t* psize);
+void* DLFunction(void* ptr, const char* sym);
 
 #endif /* RES_HPP_INCLUDED */
