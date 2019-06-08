@@ -291,8 +291,8 @@ void updateBackground(SDL_Rect* const camera) {
 	  	  // render background
 	  	  Image* pImg = LevelInfo_BackgroundLayerID(x);
 	  	  
-	  	  pImg->blit(bgpos.x() + BGMinX, bgpos.y() + BGMinY, camera);
-	  	  pImg->blit(bgpos.x() + BGMinX + WIDTH, bgpos.y() + BGMinY, camera);
+	  	  pImg->blit(bgpos.x(),         bgpos.y(), camera);
+	  	  pImg->blit(bgpos.x() + WIDTH, bgpos.y(), camera);
 	  	  ++x;
 	  	}
 	  	else {

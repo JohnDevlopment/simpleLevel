@@ -210,10 +210,9 @@ void SpriteTileCollision(int* iXY, float* fDeltasCGSpeeds, const SDL_Rect& hitbo
 	  // process each subdivision of the sprite hitbox
 	  for (int x = 0; x < iSprH; ++x) {
 	  	SDL_Rect result;
-	  	SDL_IntersectRect(tileRect.getp(), spriteRect.getp(), &result);
 	  	
 	  	// measure intersection of the two rects
-	  	if (result.w <= cdiv(TILE_WIDTH, 2)) {
+	  	if ( SDL_IntersectRect(tileRect.getp(), spriteRect.getp(), &result) ) {
 	  	  // tile point
 	  	  atile[0] = tileRect->x;
 	  	  atile[1] = tileRect->y;
