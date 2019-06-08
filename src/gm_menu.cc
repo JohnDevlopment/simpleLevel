@@ -1,17 +1,8 @@
-// global game data
-#include "headers/game.hpp"
-
-// gamemode header
-#include "headers/gm_menu.hpp"
-
-// macros that define various events
-#include "headers/event_defines.hpp"
-
-// sound system
-#include "headers/sound.hpp"
-
-// logging system
-#include "headers/log.hpp"
+#include "game.hpp"
+#include "gm_menu.hpp"
+#include "event_defines.hpp"
+#include "log.hpp"
+#include "tmath.hpp"
 
 using namespace std;
 
@@ -42,13 +33,9 @@ int gm_menu_event_mousebutton(SDL_Event& event, GameMode* const gm, uint8_t mask
 	  	Flags.set(FADEOUT);
 	  	
 	  	// change to gamemode 2 in 50 frames
-	  	GM_ChangeGamemode(gm, 2, 50);
-	  	
-	  	// play sfx
-//	  	Sound_PlaySFX(SFXStartGame, 1);
+	  	GM_ChangeGamemode(gm, 2, miliseconds_to_frames(2000));
 	  	
 	  	// stop music and delay program
-//	  	Sound_Stop(2000);
 	  	SDL_Delay(1000);
 	  }
 	}
@@ -82,9 +69,6 @@ int _gm_menu_init(GameMode* const gm, const PROGRAM& program) {
 	  return 1;
 	}
 	
-	// load menu music
-//	Sound_LoadMusic("menu.ogg", MTLevel);
-	
 	// play the music after a 800 miliseconds
 	SDL_TimerID timer = SDL_AddTimer(800, timerCallback_playMenuMusic, nullptr);
 	
@@ -93,6 +77,17 @@ int _gm_menu_init(GameMode* const gm, const PROGRAM& program) {
 	
 	// fade in from black
 	Flags.set(FADEIN);
+	
+	// play windmill.wav
+	{
+	  MusData* temp = Sound_LoadMUSType("audio/music/windmill.wav", MUS_TYPE_WAV);
+	  if (temp) {
+	  	GM_SetData(gm, temp);
+	  	MusData_SetVolume(temp, MAX_VOLUME - 30);
+	  	Sound_PlayMusic(temp, 2);
+	  	temp->lpos = 7.2;
+	  }
+	}
 	
 return 2;
 }
@@ -118,8 +113,13 @@ int _gm_menu_cleanup(GameMode* const gm, const PROGRAM& program) {
 	BG_BG1.unload();
 	BG_BG2.unload();
 	
-	// free the music that was just played
-//	Sound_Free(MTLevel);
+	// free music
+	MusData* mus = (MusData*) gm->data;
+	
+	if (mus) {
+	  Sound_FreeMUS(mus);
+	  GM_ClearData(gm);
+	}
 	
 return 0;
 }
