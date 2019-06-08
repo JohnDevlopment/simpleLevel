@@ -1,49 +1,42 @@
 // checks to make sure certain marcos are defined
-#include "headers/check_global_defines.hpp"
+#include "check_global_defines.hpp"
 
-// includes headers that all source files need in this project
-#include "headers/stdinc.h"
+// standard/SDL headers; interpret or allocate memory
+#include "stdinc.h"
+#include "sdl_incs.h"
+#include "memory.hpp"
 
 // game namespace: holds program-wide resources
-#include "headers/game.hpp"
+#include "game.hpp"
 
-// includes the timer class declaration
-#include <custom/timer_class.hpp>
+// Tcl scripts
+#include "tcl.hpp"
 
-// std::vector
+/* 1. Load so files and use them to load assets, such as sound chunks.
+   2. Sound API -- needs so files to load sound chunks. */
+#include "res.hpp"
+#include "sound.hpp"
+
+/* Level-related code.
+   1. Functions and data that pertain to the level structure.
+   2. GameMode functions and definition. GameModes are the basic subdivisions of the game.
+   3. Detects input from the user and parses it accordingly. Responses to such are dependent on the gamemode. */
+#include "levelcode.hpp"
+#include "gamemode.hpp"
+#include "event.hpp"
+
+// log functionality
+#include "log.hpp"
+
+// platform-specific headers
+#include "windows_or_linux.hpp"
+
+// efficiently track execution time with SDL_GetTicks()
+#include <timer_class.hpp>
+
+// std::vector; modify or query containers
 #include <vector>
-
-// functions that modify or query containers
 #include <algorithm>
-
-// includes all the necessary SDL headers
-#include "headers/sdl_incs.h"
-
-/* Includes all the necessary includes, defines, and function declarations
-   for the loading, building, and interactions with levels.
-   Includes gamemode.hpp, program.hpp and global_attributes.hpp */
-#include "headers/levelcode.hpp"
-
-// includes Tcl headers. Also declares functions that use Tcl
-#include "headers/tcl.hpp"
-
-// functions to interact with a binary resource file
-#include "headers/res.hpp"
-
-// sound and music functions: initialization, playback, etc.
-#include "headers/sound.hpp"
-
-// game modes, the primary subdivision of this game's functionality
-#include "headers/gamemode.hpp"
-
-// logging functions
-#include "headers/log.hpp"
-
-// includes headers specific to the current operating system
-#include "headers/windows_or_linux.hpp"
-
-// event parser
-#include "headers/event.hpp"
 
 // private
 static PROGRAM program;
@@ -78,6 +71,9 @@ int main (int argc, char* argv[]) {
 	if (! game::loadMedia(program.renderer))
 	  return 1;
 
+	// initialize the sound engine
+	if (! Sound_Init(22050, AUDIO_S16SYS, 2, 2048)) return 1;
+
 	// gamemode object
 	GameMode* gm = GM_NewObj();
 
@@ -85,9 +81,6 @@ int main (int argc, char* argv[]) {
 	  return 1;
 
 	gm->tm = 1; // current gamemode init routine
-
-	// initialize the sound engine
-//	if (! Sound_Init()) return 1;
 
 	// set background color black
 	SDL_SetRenderDrawColor(program.renderer, 0, 0, 0, 0xff);
@@ -164,7 +157,7 @@ return y;
 // private functions //
 int loadSDL() {
 	// initialize SDL
-	int res = SDL_Init(SDL_INIT_VIDEO /*| SDL_INIT_AUDIO*/ | SDL_INIT_TIMER);
+	int res = SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_TIMER);
 	if (res != 0) {
 	  cerr << "SDL_Init: " << SDL_GetError() << '\n';
 	  return -1;
@@ -197,32 +190,16 @@ int loadSDL() {
 	  }
 	}
 
-	// sdl2_mixer
-//	{
-//	  res = Mix_Init(MIX_INIT_OGG);
-
-//	  if ( (res & MIX_INIT_OGG) != MIX_INIT_OGG ) {
-//	  	cerr << "Mix_Init: " << Mix_GetError() << endl;
-//	  	return -1;
-//	  }
-
-//	  // open audio channel
-//	  res = Mix_OpenAudio(MIX_DEFAULT_FREQUENCY, MIX_DEFAULT_FORMAT, 2, CHUNKSIZE);
-
-//	  if (res < 0) {
-//	  	cerr << "Mix_OpenAudio: " << Mix_GetError() << endl;
-//	  	return -1;
-//	  }
-//	}
-
-	// log results of this function for debugging purposes
-	Log_Cout("Initialized SDL2, SDL2_image and SDL2_mixer: SDL2 with a window size of %dx%d pixels; SDL2_image with PNG and JPEG support; ",
-	 WIDTH, HEIGHT);
-	
-	Log_Cout("and SDL2_mixer with a frequency of %u hz, 2 channels, and a chunk size of %d bytes.\n",
-	 MIX_DEFAULT_FREQUENCY, CHUNKSIZE);
-
-	Log_Cout("SDL2 initialized with video, audio and timer subsystems activated\n");
+	// 
+	{
+	  unique_ptr<int[]> vals(new int[4]);
+	  
+	  SDL_GetWindowPosition(program.window, vals.get(), vals.get() + 1);
+	  SDL_GetWindowSize(program.window, vals.get() + 2, vals.get() + 3);
+	  
+	  Log_Cout("Created window with title: \"%s\". Location: %d, %d. Size: %dx%d\n",
+	  	SDL_GetWindowTitle(program.window), vals[0], vals[1], vals[2], vals[3]);
+	}
 
 return 0;
 }
@@ -243,7 +220,7 @@ void quit() {
 	// quit game systems
 
 	// shutdown the sound system
-//	Sound_Quit();
+	Sound_Quit();
 
 	// destroy the Tcl interpreter
 	TclCC_Quit();
@@ -253,10 +230,6 @@ void quit() {
 
 	// destroy window and data associated with it
 	destroyProgram(program);
-
-	// close the audio channel and quit SDL2_mixer
-//	Mix_CloseAudio();
-//	Mix_Quit();
 
 	// quit SDL2_image
 	IMG_Quit();

@@ -74,18 +74,12 @@ void Condition::move(Condition&& src) {
 }
 
 void Condition::wait(SDL_mutex* mutex, uint32_t timeout) {
-	// reset condition
-//	c__signal = SDL_FALSE;
-	
 	// wait for condition to be met
-//	while (! c__signal)
-	  SDL_CondWaitTimeout(c__cond, mutex, timeout);
+	SDL_CondWaitTimeout(c__cond, mutex, timeout);
 }
 
 int Condition::signal() {
 	c__error.clear(); // clear error status
-	
-//	c__signal = SDL_TRUE; // condition is met
 	
 	int res = SDL_CondSignal(c__cond);
 	
