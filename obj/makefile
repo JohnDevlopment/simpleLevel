@@ -8,3 +8,4 @@ OBJFILES := $(shell cat $(CONFDIR)/obj_files.txt)
 target: $(OBJFILES)
 	# 
 	# 
+
