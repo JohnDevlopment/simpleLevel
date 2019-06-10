@@ -1,0 +1,1 @@
+/usr/bin/c++     CMakeFiles/new_level.dir/main.cpp.o CMakeFiles/new_level.dir/tcl.cpp.o  -o new_level -llevelLoad -ltcl8.6 -lm -ltk8.6 

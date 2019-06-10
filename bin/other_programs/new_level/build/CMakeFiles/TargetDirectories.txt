@@ -1,0 +1,7 @@
+/home/john/programming/C++/projects/other_programs/new_level/build/CMakeFiles/install/local.dir
+/home/john/programming/C++/projects/other_programs/new_level/build/CMakeFiles/install.dir
+/home/john/programming/C++/projects/other_programs/new_level/build/CMakeFiles/new_level.dir
+/home/john/programming/C++/projects/other_programs/new_level/build/CMakeFiles/install/strip.dir
+/home/john/programming/C++/projects/other_programs/new_level/build/CMakeFiles/edit_cache.dir
+/home/john/programming/C++/projects/other_programs/new_level/build/CMakeFiles/rebuild_cache.dir
+/home/john/programming/C++/projects/other_programs/new_level/build/CMakeFiles/list_install_components.dir

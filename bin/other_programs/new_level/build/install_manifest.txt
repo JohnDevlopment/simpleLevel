@@ -1,0 +1,4 @@
+/home/john/programming/C++/projects/other_programs/new_level/bin/new_level
+/home/john/programming/C++/projects/other_programs/new_level/bin/interface.tk
+/home/john/programming/C++/projects/other_programs/new_level/bin/opt.tcl
+/home/john/programming/C++/projects/other_programs/new_level/bin/README.txt

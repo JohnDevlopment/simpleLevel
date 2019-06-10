@@ -1,0 +1,16 @@
+#!/bin/bash
+
+if [ "$1" == "" ]
+then
+	echo "Specify a filename!" >&2
+	exit 1
+fi
+
+if [ -f "$1" ]
+then
+	echo "$1 exists"
+	exit 0
+else
+	echo "$1 doesn't exist"
+	exit 1
+fi

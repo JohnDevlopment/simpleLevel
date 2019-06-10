@@ -1,0 +1,65 @@
+#!/bin/sh
+# execute using wish wish \
+exec wish "$0"
+
+# temp file id
+set id {}
+
+proc openProgram {filename} {
+	global id
+	
+	# parse external script and redirect output to standard output
+	set id [open "| ./level_editor $filename" r]
+	fconfigure $id -blocking 0
+	fileevent $id readable {
+	  # print output
+	  if {[gets $id line] >= 0} {
+	  	puts $line
+	  }
+	  
+	  # close channel
+	  if {[eof $id]} {
+	  	close $id
+	  	set id ""
+	  }
+	}
+	
+return
+}
+
+# what is the current directory and config file?
+set dir [file dirname [file normalize $argv0]]; cd $dir
+set conf _lvledconf.tcl
+
+set filetypes {
+	{ {Level Data Files} {.dat .DAT} }
+	{ {All Files} * }
+}
+
+# open configuration file
+if { [catch {source _lvledconf.tcl}] } {
+	set id [open _lvledconf.tcl w]
+	puts -nonewline $id "set dir $dir\nset filetypes {$filetypes}"
+	close $id
+	unset id
+}
+
+# get file
+set fiile [tk_getOpenFile -parent . -title Open -initialdir $dir -filetypes $filetypes]
+if {$fiile != ""} {
+	set dir [file dirname $fiile]
+	openProgram $fiile
+}
+
+# wait for <id> to be changed
+tkwait variable id
+puts {Closing program, saving configuration file...}
+
+# save configuration
+set id [open _lvledconf.tcl w]
+puts -nonewline $id "set dir $dir\nset filetypes {$filetypes}"
+close $id
+unset id
+
+# close interface
+exit
