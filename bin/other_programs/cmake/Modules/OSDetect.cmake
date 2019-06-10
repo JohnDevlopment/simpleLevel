@@ -36,8 +36,10 @@ function (set_os_compiler_defines target)
 	  	  PUBLIC _CRT_SECURE_NO_WARNINGS
 	  	  PUBLIC _SCL_SECURE_NO_WARNINGS
 	  )
+	  message (STATUS "Compiler defines: WIN32 _WIN32 _WINDOWS UNICODE _CRT_SECURE_NO_WARNINGS _SCL_SECURE_NO_WARNINGS")
 	elseif (LINUX)
 	  target_compile_definitions (${target} PUBLIC LINUX)
 	  target_compile_definitions (${target} PUBLIC _GNU_SOURCE)
+	  message (STATUS "Compiler defines: LINUX _GNU_SOURCE")
 	endif ()
 endfunction ()

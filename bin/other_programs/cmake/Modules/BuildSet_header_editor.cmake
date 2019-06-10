@@ -20,6 +20,6 @@ install (TARGETS header_editor
            OWNER_WRITE OWNER_READ OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE
         )
 
-install (FILES interface.tk
+install (FILES interface.tk README.txt
          DESTINATION ${INSTALL_PREFIX}
         )
