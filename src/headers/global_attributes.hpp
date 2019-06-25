@@ -29,8 +29,10 @@
 #endif
 
 // forces the compiler to inline a function, except for when the function is called indirectly
-#ifdef __GNUG__
-#  define INLINE __attribute__ ((always_inline))
+#if defined(__GNUG__) || defined(__clang__)
+  #define INLINE __attribute__ ((always_inline)) static __inline__
+#elif defined(_MSC_VER)
+  #define INLINE __forceinline
 #endif
 
 // tells the compiler this function will not see much usage in the program and thus can be passively ignored

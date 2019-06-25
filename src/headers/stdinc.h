@@ -14,7 +14,7 @@
 #include <cstring>
 
 // StaticDArray class; good for statically defined but dynamically allocated arrays
-#include <custom/arrays.hpp>
+#include <arrays.hpp>
 
 // assertions
 #include <cassert>
@@ -24,5 +24,10 @@
 
 // sizes of basic types
 #include <climits>
+
+// other types defined here
+#include <cstdint>
+
+#define totype(src, type) reinterpret_cast<type>(src)
 
 #endif /* STDINC_H_INCLUDED */

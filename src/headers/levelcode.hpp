@@ -110,7 +110,7 @@ namespace level {
 	int load(std::string file, const PROGRAM& program);
 
 
-	void update(GameMode* gm, char entry = 0);
+	void update(GameMode* gm, void* udata, char entry);
 	void unload();
 	void exit(int x, int y);
 }

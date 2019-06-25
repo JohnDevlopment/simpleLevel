@@ -1,11 +1,8 @@
 #ifndef SPRITE_DEF_H_INCLUDED
 #define SPRITE_DEF_H_INCLUDED
 
-// standard headers
 #include "stdinc.h"
-
-// class Object
-#include <custom/object_class.hpp>
+#include "object/object.hpp"
 
 #define GRAVITY_SPEED	8
 
@@ -93,7 +90,7 @@ public:
 	virtual int CollTileHeight() = 0;
 	
 	// function for the main sprite code
-	virtual int Main() = 0;
+	virtual int Main(void*) = 0;
 	
 	// initializes the sprite
 	virtual int Init() = 0;

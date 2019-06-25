@@ -27,8 +27,14 @@ T tabs(T val) {
 
 // returns 1 if the value is negative or 0 if it's not
 template<typename T>
+int tneg(T val) {
+	return val < 0;
+}
+
+// returns -1 if the value is negative or 1 if it's not
+template<typename T>
 int tsign(T val) {
-	return val < 0 ? 1 : 0;
+	return val < 0 ? -1 : 1;
 }
 
 // four basic math operations

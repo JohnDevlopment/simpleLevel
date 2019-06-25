@@ -2,7 +2,7 @@
 #define TILE_COLLISION_HPP
 
 // includes <pointvector>
-#include "line_point.h"
+////#include "line_point.h"
 
 // level loading library
 #include <levelLoad.hpp>
@@ -31,9 +31,6 @@ enum ENTRY_POINT {
 
 // sprite being processed by the tile collision code
 extern Sprite* CurrentSprite;
-
-// calculate collision for a sprite
-void SpriteTileCollision(int* iXY, float* fSpeedsDeltas, const SDL_Rect& hitbox);
 
 // using the X and Y coordinates, along with the size of the level, get the number of the tile located at that position
 uint16_t GetTile(int x, int y) PURE;

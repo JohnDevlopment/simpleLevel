@@ -21,24 +21,25 @@ enum MUS_FadingStatus {
 	MUS_FADE_OUT
 };
 
+/* MusData: holds music audio data */
 struct MusData;
 struct MusData {
-	MUS_Type type;
-	int error;
-	int loops;
-	int playing;
-	int fade_status;
-	int fade_step;
-	int fade_steps;
+	MUS_Type type; // internal
+	int error; // internal
+	int loops; // internal
+	int playing; // internal
+	int fade_status; // internal
+	int fade_step; // internal
+	int fade_steps; // internal
 	union {
-	  void* ogg;
+	  OGGMusic* ogg;
 	  WAVStream* wav;
 	  void* cmd;
-	};
+	}; // internal
 	double lpos;
-	uint8_t volume;
-	MusData* head;
-	MusData* next;
+	uint8_t volume; // internal
+	MusData* head; // internal
+	MusData* next; // internal
 };
 
 enum {
@@ -60,10 +61,27 @@ inline void MusData_Clear(MusData* mus, int vol) {
 	mus->next = nullptr;
 }
 
-inline void MusData_SetVolume(MusData* mus, int vol) {
-	if (mus) {
-	  mus->volume = (uint8_t) vol;
+inline MusData* MusData_LinkMUS(MusData* mus, MusData* link) {
+	if (mus && link) {
+	  if (mus->head == nullptr && link->head == nullptr) {
+	  	MusData* last = mus;
+	  	MusData* current = mus->next;
+	  	
+	  	while (current) {
+	  	  last = current;
+	  	  current = current->next;
+	  	}
+	  	
+	  	last->next = link;
+	  	link->head = mus;
+	  }
 	}
+	
+return mus;
+}
+
+INLINE void MusData_SetVolume(MusData* mus, int vol) {
+	mus->volume = (uint8_t) vol;
 }
 
 #define MusCount 6

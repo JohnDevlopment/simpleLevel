@@ -1,14 +1,10 @@
 #ifndef PLAYER_DEF_H_INCLUDED
 #define PLAYER_DEF_H_INCLUDED
 
-// sprite deinition
 #include "sprite_def.h"
-
-// SDL headers
 #include "sdl_incs.h"
-
-// template math functions
 #include "tmath.hpp"
+#include "game.hpp"
 
 class Player : public Sprite {
 public:
@@ -23,6 +19,7 @@ public:
 	// static data members //
 	
 	static float sm_UpSpeeds[2]; // (static) speed of the jump
+	static uint8_t sm_FrmIdx; // (static) frame index
 	
 	// ctor
 	Player(SDL_Renderer*);
@@ -36,7 +33,7 @@ public:
 	int CollTileHeight() {return 2;}
 	
 	// player code
-	int Main() {return 0;}
+	int Main(void*);
 	
 	// initializes the player object
 	int Init();

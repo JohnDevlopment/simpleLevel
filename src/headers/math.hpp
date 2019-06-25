@@ -54,4 +54,9 @@ uint32_t Swap32bit(uint32_t value);
 // reverses the order of four 8-bit integers in an array as if it were a 32-bit integer
 void Swap32bit(uint8_t* pValues);
 
+// calculates a delta
+INLINE float CalcDelta(float fps, float acc) {
+	return (1.0f / fps) * (acc + 1);
+}
+
 #endif /* MATH_HPP_INCLUDED */
