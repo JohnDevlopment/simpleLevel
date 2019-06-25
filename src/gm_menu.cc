@@ -34,8 +34,8 @@ int gm_menu_event_mousebutton(SDL_Event& event, GameMode* const gm, uint8_t mask
 	  	
 	  	// change to gamemode 2 in 50 frames
 	  	GM_ChangeGamemode(gm, 2, miliseconds_to_frames(2000));
-	  	
-	  	// stop music and delay program
+	  	Sound_FadeOutMusic(1000);
+	  	Sound_PlaySFX(SFXStartGame, 0);
 	  	SDL_Delay(1000);
 	  }
 	}
@@ -69,25 +69,21 @@ int _gm_menu_init(GameMode* const gm, const PROGRAM& program) {
 	  return 1;
 	}
 	
+	// load music
+	MusData* mus = Sound_LoadMUSType("audio/music/menu.ogg", MUS_TYPE_OGG);
+	if (mus) {
+	  GM_SetData(gm, mus);
+	  MusData_SetVolume(mus, 45);
+	}
+	
 	// play the music after a 800 miliseconds
-	SDL_TimerID timer = SDL_AddTimer(800, timerCallback_playMenuMusic, nullptr);
+	SDL_TimerID timer = SDL_AddTimer(800, timerCallback_playMenuMusic, mus);
 	
 	if (! timer)
 	  std::cerr << "Failed to initialize timer: " << SDL_GetError() << '\n';
 	
 	// fade in from black
 	Flags.set(FADEIN);
-	
-	// play windmill.wav
-	{
-	  MusData* temp = Sound_LoadMUSType("audio/music/windmill.wav", MUS_TYPE_WAV);
-	  if (temp) {
-	  	GM_SetData(gm, temp);
-	  	MusData_SetVolume(temp, MAX_VOLUME - 30);
-	  	Sound_PlayMusic(temp, 2);
-	  	temp->lpos = 7.2;
-	  }
-	}
 	
 return 2;
 }
@@ -101,8 +97,7 @@ int _gm_menu_blit(GameMode* const gm, const PROGRAM& program) {
 	BG_BG2.blit(240,180);
 	
 	// black rectangle
-	if (Flags.mask(FADING))
-	  BG_BLACK.blit();
+	BG_BLACK.blit();
 	
 return 0;
 }
@@ -114,12 +109,8 @@ int _gm_menu_cleanup(GameMode* const gm, const PROGRAM& program) {
 	BG_BG2.unload();
 	
 	// free music
-	MusData* mus = (MusData*) gm->data;
-	
-	if (mus) {
-	  Sound_FreeMUS(mus);
-	  GM_ClearData(gm);
-	}
+	Sound_FreeMUS( reinterpret_cast<MusData*>(gm->data) );
+	GM_ClearData(gm);
 	
 return 0;
 }
@@ -142,10 +133,11 @@ return functions[index](gm, program);
 
 // timer callback
 uint32_t timerCallback_playMenuMusic(uint32_t interval, void* data) {
-	Log_Cout("Music played after %u miliseconds\n", interval);
-	
 	// player the music for one iteration
-//	Sound_PlayMusicOnce(MTLevel);
+	MusData* mus = (MusData*) data;
+	if (mus) {
+	  Sound_PlayMusic(mus, 1);
+	}
 	
 return 0;
 }

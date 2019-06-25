@@ -1,41 +1,22 @@
 // global game data
-#include "headers/game.hpp"
+#include "game.hpp"
 
-// level data and functions
-#include "headers/levelcode.hpp"
-
-// functions to retrieve per-level options
-#include "headers/levelinfo.hpp"
-
-// sound system
-#include "headers/sound.hpp"
-
-// camera system
-#include "headers/camera.hpp"
-
-// event triggers
-#include "headers/triggers.hpp"
-
-// Tcl scripting system
-#include "headers/tcl.hpp"
-
-// logging system
-#include "headers/log.hpp"
-
-// tile collision
-#include "headers/tile_collision.hpp"
-
-// bad_option exception class
-#include <custom/bad_option>
-
-// get lvalue references from pointers and vice versa
-#include <custom/lvalue_rvalue_pointers.hpp>
-
-// std::stringstream
+#include "levelcode.hpp"
+#include "levelinfo.hpp"
+#include "sound.hpp"
+#include "camera.hpp"
+#include "triggers.hpp"
+#include "tcl.hpp"
+#include "log.hpp"
+#include "tile_collision.hpp"
+#include "gm_level.hpp"
+#include <bad_option>
+#include <lvalue_rvalue_pointers.hpp>
 #include <sstream>
+#include <arrays.hpp>
 
-// StaticDArray
-#include <custom/arrays.hpp>
+#define NO_KEY_SYM_BITMASKS 1
+#include "private/player_data_def.h"
 
 // private variables
 
@@ -46,7 +27,7 @@ static bool createTilemaps(SDL_Surface**);
 static void buildLevel(SDL_Surface*, SDL_Surface**);
 static bool turnTilemapsToTexture(SDL_Surface** const, SDL_Renderer*);
 static void updateBackground(SDL_Rect* const);
-static void updateSpritesAndTilemap(const bool);
+static void updateSpritesAndTilemap(const bool, void*);
 static SDL_Rect&& getXY(const SDL_Surface*, uint16_t);
 static void placeTile(const Tile&, SDL_Surface*, uint16_t, SDL_Surface**);
 static int flagsBasedOnCodeID(const Tile&);
@@ -179,7 +160,7 @@ int level::load(string file, const PROGRAM& program) {
 return 0;
 }
 
-void level::update(GameMode* gm, char entry) {
+void level::update(GameMode* gm, void* udata, char entry) {
 	if (! entry) {
 	  // camera control
 	  camera::track();
@@ -189,12 +170,12 @@ void level::update(GameMode* gm, char entry) {
 	switch (entry) {
 	  case 1:
 	  	updateBackground(&CAM_CAMERA);
-	  	updateSpritesAndTilemap(false);
+	  	updateSpritesAndTilemap(false, udata);
 	  	break;
 	  
 	  case 0:
 	  	updateBackground(&CAM_CAMERA);
-	  	updateSpritesAndTilemap(true);
+	  	updateSpritesAndTilemap(true, udata);
 	  	break;
 	  
 	  default:
@@ -226,28 +207,13 @@ void level::unload() {
 }
 
 // private helper functions
-void updateSpritesAndTilemap(const bool willRenderSprites) {
+void updateSpritesAndTilemap(const bool willRenderSprites, void* udata) {
 	SDL_Rect* cam = &CAM_CAMERA;
 	
-	// if the player is stunned, decrement that timer
-	if (ThePlayer->m_StunTimer > 0) --(ThePlayer->m_StunTimer);
-	
-	// decrement invincibility timer
-	if (ThePlayer->m_InvcTimer > 0) --(ThePlayer->m_InvcTimer);
-	
-	// if the death animation timer is set...
-	else if (ThePlayer->m_DeathTimer > 0) {
-	  // decrement the timer
-	  --(ThePlayer->m_DeathTimer);
-	  
-	  // if the timer decrements to zero
-	  if (ThePlayer->m_DeathTimer == 0) {
-	  	// set the bit flags for fading out to black and quitting the game
-	  	game::Flags.set(FADEOUT | QUITGAME);
-	  	
-	  	// disable the camera
-	  	camera::Track = false;
-	  }
+	reinterpret_cast<_PlayerData*>(udata)->what = 1;
+	if ( ThePlayer->Main(udata) == 1 ) {
+	  game::Flags.set(FADEOUT | QUITGAME);
+	  camera::Track = false;
 	}
 	
 	// render the back tilemap
@@ -259,9 +225,9 @@ void updateSpritesAndTilemap(const bool willRenderSprites) {
 	  ThePlayer->m_obj.move();
 	  
 	  // if grounded, the sprite should have no Y speed
-	  if (ThePlayer->GetColl(M_COLL_DOWN)) {
-	  	ThePlayer->m_obj.set_y_speed(0);
-	  }
+//	  if (ThePlayer->GetColl(M_COLL_DOWN)) {
+//	  	ThePlayer->m_obj.yspeed = 0;
+//	  }
 	}
 	
 	// render the player's graphics
@@ -328,13 +294,18 @@ int flagsBasedOnCodeID(const Tile& tile) {
 	int iSlpID = tile.codeID - 8;
 	
 	if (iSlpID >= 0 && iSlpID < NUM_SLOPES)
-	  flags |= TILEFLAG_ToSlopeID(iSlpID);
+	  flags |= TILEFLAG_ToSlopeID(iSlpID) | TILEFLAG_SLOPE;
 	
 	// slopes between 12 - 15
 	iSlpID = tile.codeID - 12;
 	
 	if (iSlpID >= 0 && iSlpID < NUM_SLOPES)
-	  flags |= TILEFLAG_ToSlopeID(iSlpID) | TILEFLAG_SLOPEINV;
+	  flags |= TILEFLAG_ToSlopeID(iSlpID) | TILEFLAG_SLOPEINV | TILEFLAG_SLOPE;
+	
+	// which tiles are solid
+	if (tile.codeID == 25) {
+	  flags |= TILEFLAG_SOLID;
+	}
 	
 return flags;
 }

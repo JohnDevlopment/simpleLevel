@@ -1,36 +1,22 @@
 // global game data
 #include "headers/game.hpp"
 
-// gamemode data and functions
 #include "headers/gamemode.hpp"
-
-// tile collision code
 #include "headers/tile_collision.hpp"
-
-// level data
 #include "headers/levelcode.hpp"
-
-// camera data
 #include "headers/camera.hpp"
-
-// math functions
 #include "headers/math.hpp"
 #include "headers/tmath.hpp"
-
-// references and pointers
 #include <lvalue_rvalue_pointers.hpp>
-
-// functions that reference memory directly
 #include "headers/memory.hpp"
-
-// logging functions
 #include "headers/log.hpp"
+#include "headers/object/object.hpp"
 
 // how many tiles are currently defined in the game
-#define NUMBER_OF_CODED_TILES	56
+//#define NUMBER_OF_CODED_TILES	56
 
 // static function declarations //
-static SDL_Rect newTileRect(int, int);
+////static SDL_Rect newTileRect(int, int);
 
 inline void incPosY(Point<int>& collpoint, int& y, int val) {
 	collpoint[1] += val;
@@ -43,43 +29,27 @@ inline void incPosY(Point<int>& collpoint, int& y, int val) {
 Sprite* CurrentSprite = nullptr;
 
 // static variables //
-// rectangular hitbox of a portion of a sprite
-static generic_class<SDL_Rect> spriteRect;
+static Point<int> TilePoint;
 
-// rectangular hitbox for a tile
-static generic_class<SDL_Rect> tileRect(newTileRect(0, 0));
-
-// the location of a tile as a point
-static Point<int> atile;
-
-// type declaration
-typedef void (* FPV_TileFunction)(int*, float*, const SDL_Rect&, const Point<int>&, const ENTRY_POINT);
-
-// declarations to a series of functions only visible in this source file
-#include "tilecode/_tile_func_decl.cxx"
-
-// slope tables
+#include "tilecode/_tile_collision_func.cxx"
 #include "tilecode/_tables.cxx"
 
 // aliases to tile functions
+#define Tile000 EmptyTile
 #define Tile001 Ledge
-#define Tile025 SolidTile
-#define Tile008 Slope
-#define Tile009 Slope
-#define Tile010 Slope
-#define Tile011 Slope
-#define Tile026 OneWayDown
-#define Tile027 OneWayDown
+#define Tile024 SlopeJoint
 
 // pointers to said functions
-constexpr FPV_TileFunction TileFunctions[NUMBER_OF_CODED_TILES] = {
+typedef int (*TileFunction)(Rect* loc, Rect* col, const ENTRY_POINT entry);
+
+constexpr TileFunction _funcs[NUMBER_OF_CODED_TILES] = {
 	Tile000, Tile001, Tile000, Tile000,
 	Tile000, Tile000, Tile000, Tile000,
-	Tile008, Tile009, Tile010, Tile011,
 	Tile000, Tile000, Tile000, Tile000,
 	Tile000, Tile000, Tile000, Tile000,
 	Tile000, Tile000, Tile000, Tile000,
-	Tile000, Tile025, Tile026, Tile027,
+	Tile000, Tile000, Tile000, Tile000,
+	Tile024, Tile000, Tile000, Tile000,
 	Tile000, Tile000, Tile000, Tile000,
 	Tile000, Tile000, Tile000, Tile000,
 	Tile000, Tile000, Tile000, Tile000,
@@ -90,12 +60,17 @@ constexpr FPV_TileFunction TileFunctions[NUMBER_OF_CODED_TILES] = {
 };
 
 // inline functions //
-inline uint16_t GetTile2(const Point<int>& xy) {
+INLINE uint16_t GetTile2(const Point<int>& xy) {
 	return GetTile(xy.x(), xy.y());
 }
 
-inline uint16_t GetTile3(const SDL_Rect& rect) {
+INLINE uint16_t GetTile3(const SDL_Rect& rect) {
 	return GetTile(rect.x, rect.y);
+}
+
+INLINE void TileLocationInPoint(Point<int>& point, const Point<int>& ref) {
+	point[0] = ref.x() - (ref.x() % TILE_WIDTH);
+	point[1] = ref.y() - (ref.y() % TILE_HEIGHT);
 }
 
 // public functions //
@@ -111,163 +86,100 @@ bool IntersectPointAndTile(const Point<int>& point, int pw, int ph, int x, int y
 return (bool) SDL_IntersectRect( &A, &B, &result );
 }
 
-void SpriteTileCollision(int* iXY, float* fDeltasCGSpeeds, const SDL_Rect& hitbox) {
+int SpriteTileCollision_LeftRight(Rect* loc, Rect& collbox, int steps) {
 	using level::VTiles;
-	static uint16_t uiBotTile = 0;
-	int entry;
-	uint16_t uiCurTile;
 	
-	// entry point into every function
-	entry = CurrentSprite->GetID() == 255 ? ENTRY_PLAYER_DOWN : ENTRY_SPRITE_DOWN;
+	uint8_t uiFlags = 0;
 	
-	// camera edge detection //
-	
-	// if the sprite is left of the camera...
-	if (hitbox.x < CAM_CAMERA.x) {
-	  // push the sprite forward by subtracting its X value by the difference between it and the camera edge
-	  iXY[0] -= hitbox.x - CAM_CAMERA.x;
-	}
-	
-	// if the sprite is right of the camera
-	else if ((hitbox.x + hitbox.w) > (CAM_CAMERA.x + CAM_CAMERA.w)) {
-	  // pull the sprite back by subtracting its X value by the positive difference between it and the camera edge
-	  iXY[0] -= (hitbox.x + hitbox.w) - (CAM_CAMERA.x + CAM_CAMERA.w);
-	}
-	
-	// start tile collision detection //
-	
-	// shorthand for the tile function call
-	#define TILEFUNC(entry) TileFunctions[VTiles[uiCurTile].codeID](\
-	                                    iXY,\
-	                                    fDeltasCGSpeeds,\
-	                                    hitbox,\
-	                                    collpoint,\
-	                                    (ENTRY_POINT) entry\
-	                                                               )
-	
-	// shorthand for getting the location of a tile underneath the point
-	#define WHERETILE(point) TileLocation(point.x(), point.y())
-	
-	// the bottom edge of the hitbox
-	Point<int> collpoint(hitbox.x + hitbox.w / 2, hitbox.y + hitbox.h);
-	
-	// location of the tile under the bottom edge of the sprite
-	atile = WHERETILE(collpoint);
-	
-	// tile number
-	uiCurTile = uiBotTile = GetTile2(collpoint);
-	
-	// positive Y speed
-	if (fDeltasCGSpeeds[3] > 0) {
-	  // hide the slope id flag in the sprite's X position
-	  int iSlpID = TILEFLAG_SlopeID(VTiles[uiCurTile]);
-	  iXY[0] |= iSlpID << 24; // 0x000000ff -> 0xff000000
+	/*if (steps)*/ {
+	  Point<int> point;
+	  int iDiff;
+	  Tile tile;
 	  
-	  // collision
-	  TILEFUNC(entry);
-	}
-	
-	// the top edge of the hitbox
-	collpoint[1] -= hitbox.h;
-	
-	// location of that tile
-	atile = WHERETILE(collpoint);
-	
-	// tile number
-	uiCurTile = GetTile2(collpoint);
-	
-	// change entry point to ENTRY_*_UP (* = PLAYER/SPRITE)
-	++entry;
-	TILEFUNC(entry);
-	
-	// process sprite collision with a tile to the left or right of the sprite
-	for (char leftright = 0; leftright < 2; ++leftright) {
-	  // entry point switching between left and right
-	  ++entry;
+	  // left side
+	  point[0] = collbox.x;
+	  point[1] = collbox.y + static_cast<int>(0.75f * collbox.h);
 	  
-	  // skip if ceiling collision is true
-	  if (CurrentSprite->GetColl(M_COLL_UP)) break;
-	  
-	  // approximate tile height of the hitbox
-	  const int iSprH = CurrentSprite->CollTileHeight();
-	  
-	  // counter: reaches zero or less when whole sprite has been checked
-	  int iCnt = hitbox.h;
-	  // height of a division of the sprite hitbox
-	  int iSubDivHeight;
-	  
-	  // set sprite rectangle
-	  spriteRect->x = hitbox.x;
-	  spriteRect->y = hitbox.y;
-	  spriteRect->w = hitbox.w;
-	  spriteRect->h = hitbox.h / iSprH;
-	  
-	  // height of a subdivision of the sprite rectangle
-	  iSubDivHeight = spriteRect->h;
-	  // location of a tile in rect
-	  TileLocationInRect(tileRect.get(), spriteRect->x + (leftright ? (spriteRect->w - 1) : 0), spriteRect->y);
-	  
-	  // process each subdivision of the sprite hitbox
-	  for (int x = 0; x < iSprH; ++x) {
-	  	SDL_Rect result;
-	  	
-	  	// measure intersection of the two rects
-	  	if ( SDL_IntersectRect(tileRect.getp(), spriteRect.getp(), &result) ) {
-	  	  // tile point
-	  	  atile[0] = tileRect->x;
-	  	  atile[1] = tileRect->y;
-	  	  // collision point
-	  	  collpoint[0] = result.x +  (leftright ? result.w - 1 : 0);
-	  	  collpoint[1] = result.y;
-	  	  
-	  	  // tile number
-	  	  uiCurTile = GetTile2(collpoint);
-	  	  // function
-	  	  TILEFUNC(entry);
-	  	}
-	  	
-	  	// decrease counter
-	  	iCnt -= iSubDivHeight;
-	  	// lower tile rect Y
-	  	tileRect->y += iSubDivHeight;
-	  	// lower sprite rect Y
-	  	spriteRect->y += iSubDivHeight;
-	  	
-	  	// negative counter
-	  	if (iCnt < 0) {
-	  	  tileRect->y   += iCnt;
-	  	  spriteRect->y += iCnt;
-	  	}
-	  } // end for (int x = 0; x < iSprH; ++x)
-	} // end for (char leftright = 0; leftright < 2; ++leftright)
-	
-	
-	
-	
-	
-	return;
-	
-	
-	// calculate player fall distance if its down-blocked state is not set
-	if (CurrentSprite->GetID() == 255) {
-	  Player* player = (Player*) CurrentSprite;
-	  
-	  // if the player is touching the ground, then check if the fall distance has exceeded MAX_FALL_DISTANCE
-	  if (player->GetColl(M_COLL_DOWN)) {
-	  	// if so, hurt the player
-	  	if (player->m_FallDistance == MAX_FALL_DISTANCE) {
-	  	  player->Hurt();
-	  	}
-	  	
-	  	// reset counter
-	  	player->m_FallDistance = 0;
+	  tile = VTiles.at( GetTile2(point) );
+	  if ( TILEFLAG_IsSolid(tile) ) {
+	  	iDiff = TILE_WIDTH - (point.x() % TILE_WIDTH);
+	  	loc->x += iDiff;
+	  	collbox.x += iDiff;
 	  }
 	  
-	  // if not touching the ground, and Y speed is beyond a certain speed, increment the counter
-	  else if (fDeltasCGSpeeds[3] > 3.0f) {
-	  	player->m_FallDistance = Inc(player->m_FallDistance, 1, MAX_FALL_DISTANCE);
+	  
+	}
+	
+return static_cast<int>(uiFlags);
+}
+
+int SpriteTileCollisionOneStep(Rect* loc, Rect& collbox, int steps) {
+	using level::VTiles;
+	
+	#ifndef NDEBUG
+	constexpr int _lvl_bot = TILE_HEIGHT * 30;
+	static_assert(_lvl_bot > 0, "_lvl_bot is <= zero; assertion failed");
+	#endif
+	
+	assert(collbox.y + collbox.h < _lvl_bot);
+	assert(loc != nullptr);
+	
+	Point<int> point;
+	int iSign;
+	uint8_t uiFlags;
+	
+	iSign = tsign(steps);
+	steps = tabs(steps);
+	
+	while (steps-- > 0) {
+	  int iDiffY;
+	  uint16_t uiTile;
+	  
+	  point[0] = collbox.x + collbox.w / 2;
+	  point[1] = collbox.y + collbox.h;
+	  uiTile = GetTile2(point);
+	  iDiffY = point.y() % TILE_HEIGHT;
+	  
+	  // if a tile is a slope:
+	  const Tile& tile = VTiles[uiTile];
+	  if ( TILEFLAG_IsSlope(tile) ) {
+	  	const short int* iOffsets = _slope_tables[TILEFLAG_SlopeID(tile)];
+	  	int iDiffX = point.x() % TILE_WIDTH;
+	  	
+	  	// if the slope is inverted:
+	  	if ( TILEFLAG_IsInvSlope(tile) ) {
+	  	  iDiffX = (TILE_WIDTH - 1) - iDiffX;
+	  	}
+	  	
+	  	if (iDiffY > iOffsets[iDiffX]) {
+	  	  short int iOff = iDiffY - iOffsets[iDiffX];
+	  	  loc->y -= iOff;
+	  	  collbox.y -= iOff;
+	  	  uiFlags = TILEFLAG_SLOPE;
+	  	}
+	  }
+	  
+	  // if a tile is solid:
+	  else if ( TILEFLAG_IsSolid(tile) ) {
+	  	uiFlags = TILEFLAG_SOLID;
+	  	loc->y -= iDiffY;
+	  	collbox.y -= iDiffY;
+	  }
+	  else {
+	  	uiFlags = _funcs[tile.codeID](loc, &collbox, ENTRY_PLAYER_DOWN);
+	  }
+	  
+	  // no collision
+	  if (! uiFlags) {
+	  	loc->y += iSign;
+	  	collbox.y += iSign;
+	  }
+	  else {
+	  	steps = 0;
 	  }
 	}
+	
+return (int) uiFlags;
 }
 
 Point<int> GetXY(uint16_t uiTile, int iRowTiles) {
@@ -309,10 +221,8 @@ return retval;
 }
 
 // private functions //
-SDL_Rect newTileRect(int x, int y) {
-	SDL_Rect temp = {x, y, TILE_WIDTH, TILE_HEIGHT};
-	
-return temp;
-}
-
-#include "tilecode/_tile_collision_func.cxx"
+//SDL_Rect newTileRect(int x, int y) {
+//	SDL_Rect temp = {x, y, TILE_WIDTH, TILE_HEIGHT};
+//	
+//return temp;
+//}

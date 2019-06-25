@@ -37,29 +37,15 @@
 // gamemode headers
 #include "headers/gm_level.hpp"
 
+// private types, variables, etc.
+#include "private/player_data_def.h"
+
 using namespace std;
 using level::ThePlayer;
 using level::levelEvents;
 using level::update;
 
-// enumeration of all defined scancodes
-enum {
-	SCAN_S,
-	SCAN_LEFT,
-	SCAN_RIGHT,
-	SCAN_UP,
-	SCAN_L,
-	SCAN_ESCAPE,
-	SCAN_Q,
-	SCAN_W,
-	
-	SCAN_END
-};
-
 // private function prototypes
-static int _main_normal(GameMode* const, const PROGRAM&);
-static int _main_dialogue(GameMode* const, const PROGRAM&);
-static int _main_camera(GameMode* const, const PROGRAM&);
 static int _gm_level_cleanup(GameMode* const, const PROGRAM&);
 static int _gm_level_main(GameMode* const, const PROGRAM&);
 static int _gm_level_init(GameMode* const, const PROGRAM&);
@@ -68,9 +54,6 @@ static uint32_t timerCallback_playLevelMusic(uint32_t, void*);
 // priority list of events to process
 static StaticDArray<uint8_t,7> _key_sym = {GMLevel_Key_s, GMLevel_Key_Left, GMLevel_Key_Right,
  GMLevel_Key_Up, GMLevel_Key_l, GMLevel_Key_Escape, GMLevel_Key_Buffer};
-
-// bitmask table
-constexpr uint8_t _key_sym_bitmasks[6] = {1, 2, 4, 8, 16, 32};
 
 // input bit flags: each bit corresponds to whether a certain key is being held down
 static uint8_t _key_sym_bits = 0;
@@ -82,61 +65,38 @@ static StaticDArray<SDL_Scancode,9> _scancodes = {
 	SDL_SCANCODE_UNKNOWN, SDL_SCANCODE_UNKNOWN, SDL_SCANCODE_UNKNOWN
 };
 
-uint32_t timerCallback_playLevelMusic(uint32_t interval, void* data) {
-	// play level music on loop
-//	if ( ! Sound_Playing() )
-//	  Sound_PlayMusicLooped(MTLevel);
+// data to forward to Player::Main
+static generic_class<_PlayerData> _player_data;
 
-	std::cout << "hello\n";
+// level music
+static MusData* LevelMusic = nullptr;
 
-return 0;
+void _gm_level_saveMusData(MusData* mus) {
+	LevelMusic = mus;
 }
 
-// gm_level MAIN routine //
-int _gm_level_main(GameMode* const gm, const PROGRAM& program) {
-	// list of pointers to subfunctions
-	typedef int (*InputMode_Function)(GameMode* const, const PROGRAM&);
+MusData* _gm_level_getMusData() {return LevelMusic;}
 
-	constexpr InputMode_Function functions[5] = {
-	  _main_normal, _main_camera, _main_normal, _main_dialogue, _main_normal
-	};
+//////////////// functions to help: gm_level MAIN routine /////////////////////
+static uint32_t timerCallback_playLevelMusic(uint32_t interval, void* data) {
+	// play level music on loop
+	Sound_ResumeMusic();
 
-return functions[levelEvents](gm, program);
+return 0;
 }
 
 /* Notes to self: firstly, _key_sym_bits is a field of bits that each correspond to a key being pressed. Mask the bits
    using _key_sym_bitmasks indexed by a value of GMLevel_KeyListSym (header: gm_level_defs.h). That is how you
    can tell what inputs have been inputted. */
-int _main_normal(GameMode* const gm, const PROGRAM&) {
+static int _main_normal(GameMode* const gm, const PROGRAM&) {
 	using namespace level;
 	using game::FrameCounter;
 	using game::Flags;
 
+	_player_data->what = 1;
+
 	// update the level
-	update(gm);
-
-	// if the player is moving left or right
-	if (_key_sym_bits & (_key_sym_bitmasks[GMLevel_Key_Left] | _key_sym_bitmasks[GMLevel_Key_Right])) {
-	  static uint8_t uFrmIdx = 1;
-	  
-	  if (! (FrameCounter % 3)) {
-	  	uFrmIdx = (FrameCounter % 2) + 1;
-	  }
-	  
-	  // set the current frame of the player when he is moving
-	  ThePlayer->m_obj.Frame = uFrmIdx;
-	}
-	else {
-	  // zero'th animation frame
-	  ThePlayer->m_obj.Frame = 0;
-	}
-
-	// if the invincibility timer is set, flicker between two frames
-	if (ThePlayer->m_InvcTimer) {
-	  int iFrmIdx            = ThePlayer->m_obj.Frame;    // anim frame
-	  const int iFrames[]    = {iFrmIdx, 3};              // anim frame/empty frame
-	  ThePlayer->m_obj.Frame = iFrames[FrameCounter % 2]; // flicker between them
-	}
+	update(gm, _player_data.getp(), 0);
 
 	// render the black screen if the right flags are set
 	if (Flags.mask(FADING | QUITGAME))
@@ -154,10 +114,13 @@ int _main_normal(GameMode* const gm, const PROGRAM&) {
 	  }
 	}
 
+	_player_data->what = 2;
+	ThePlayer->Main( _player_data.getp() );
+
 return 0;
 }
 
-int _main_dialogue(GameMode* const gm, const PROGRAM& program) {
+static int _main_dialogue(GameMode* const gm, const PROGRAM& program) {
 //	using level::update;
 //	using game::Flags;
 
@@ -181,7 +144,7 @@ int _main_dialogue(GameMode* const gm, const PROGRAM& program) {
 return 0;
 }
 
-int _main_camera(GameMode* const gm, const PROGRAM& program) {
+static int _main_camera(GameMode* const gm, const PROGRAM& program) {
 //	using game::Flags;
 
 //	// update the level
@@ -208,22 +171,43 @@ int _main_camera(GameMode* const gm, const PROGRAM& program) {
 return 0;
 }
 
-// gm_level CLEANUP routine //
+////////////////////////// gm_level MAIN routine /////////////////////////
+int _gm_level_main(GameMode* const gm, const PROGRAM& program) {
+	// list of pointers to subfunctions
+	typedef int (*InputMode_Function)(GameMode* const, const PROGRAM&);
+
+	constexpr InputMode_Function functions[5] = {
+	  _main_normal, _main_camera, _main_normal, _main_dialogue, _main_normal
+	};
+
+return functions[levelEvents](gm, program);
+}
+
+//////////////////////// gm_level CLEANUP routine ///////////////////////
 int _gm_level_cleanup(GameMode* const gm, const PROGRAM& program) {
 	using level::unload;
-
+	using game::Flags;
+	
+	// unload the level
 	level::unload();
 	UnloadBackgroundObj();
 	
+	// reset the background color
 	JColor black = {0, 0, 0, 255};
 	game::bgcolor(black);
+	
+	// clean up the level data
+	if ( Flags.mask(LEVEL_CLEANUP) ) {
+	  Sound_FreeMUS(LevelMusic);
+	  LevelMusic = nullptr;
+	  Flags.unset(LEVEL_CLEANUP);
+	}
 	
 return 0;
 }
 
-#include "gm_level/pointers.cxx"
-
-static int _gm_level_init(GameMode* const gm, const PROGRAM& program) {
+/////////////////////// gm_level INIT routine //////////////////////////
+int _gm_level_init(GameMode* const gm, const PROGRAM& program) {
 	// retrieve the scancode of each key defined here
 	if (! _scancodes[SCAN_END]) {
 	  _scancodes[SCAN_S]      = SDL_GetScancodeFromKey(SDLK_s);
@@ -242,39 +226,22 @@ static int _gm_level_init(GameMode* const gm, const PROGRAM& program) {
 	// reset all keys
 	_key_sym_bits = 0;
 
-	// get index from Tcl depending on the level name
-//	{
-//	  int ret = Tcl_Eval(gInterp, "Level index $CurrentLevel");
-//	  if (ret == TCL_ERROR)
-//	  	cerr << "Error: " << Tcl_GetStringResult(gInterp) << '\n';
-//	  else {
-//	  	ret = -1;
-//	  	Tcl_Obj* result = Tcl_GetObjResult(gInterp);
-//	  	Tcl_GetIntFromObj(gInterp, result, &ret);
-//	  }
-
-//	  // load a per-level init routine
-//	  if (ret >= 0) {
-//	  	initFuncs[ret](gm, program);
-//	  }
-//	}
+	// save data to private struct
+	_player_data->KeySymBits = &_key_sym_bits;
 
 	// after a certain amount of time, play the level's music
 	SDL_TimerID timer = SDL_AddTimer(2000, timerCallback_playLevelMusic, nullptr);
 	
 	if (! timer) {
 	  Log_Cerr("Failed to initialize timer in gm_level: %s\n", SDL_GetError());
+	  Sound_HaltMusic();
+	  Sound_FreeMUS(LevelMusic);
+	  LevelMusic = nullptr;
 	}
 
-	// start level
 	game::Flags.set(FADEIN);
-
-	// initialize the player's values
 	level::ThePlayer->Init();
-
 	BG_BLACK.blit();
-
-	// correct the camera so that it centers on the sprite
 	camera::correctCamera();
 
 return 2;
@@ -290,7 +257,7 @@ int gm_level(void* const gamemode_void, const PROGRAM& program) {
 	  _gm_level_cleanup
 	};
 
-	GameMode* gm = reinterpret_cast<GameMode*>(gamemode_void);
+	GameMode* gm = (GameMode*) gamemode_void;
 
 	// jump to function using index
 	const uint16_t index = (gm->tm < 3) ? gm->tm : 0;
@@ -340,7 +307,7 @@ static int _keyboard_normal(SDL_Event& event, GameMode* const gm, const uint8_t*
 	  	  	// if the right key isn't being pressed
 	  	  	if (! (_key_sym_bits & _key_sym_bitmasks[GMLevel_Key_Right])) {
 	  	  	  // assign a negative X speed to the player
-	  	  	  ThePlayer->m_obj.set_x_vel( _left_right_speeds[index+2] ); // player move left
+	  	  	  ThePlayer->m_obj.xspeed = _left_right_speeds[index+2]; // player move left
 	  	  	  
 	  	  	  // make the player face left
 	  	  	  ThePlayer->m_obj.flip(SDL_FLIP_NONE);
@@ -354,7 +321,7 @@ static int _keyboard_normal(SDL_Event& event, GameMode* const gm, const uint8_t*
 	  	  	_key_sym_bits &= _key_sym_bitmasks[GMLevel_Key_Left] ^ 0xff;
 	  	  	
 	  	  	// freeze the player
-	  	  	ThePlayer->m_obj.set_x_vel(0);
+	  	  	ThePlayer->m_obj.xspeed = 0;
 	  	  }
 	  	  break;
 
@@ -366,7 +333,7 @@ static int _keyboard_normal(SDL_Event& event, GameMode* const gm, const uint8_t*
 	  	  	// if the left key isn't being pressed
 	  	  	if (! (_key_sym_bits & _key_sym_bitmasks[GMLevel_Key_Left])) {
 	  	  	  // give the player a positive X speed and make it face right
-	  	  	  ThePlayer->m_obj.set_x_vel(_left_right_speeds[index]);
+	  	  	  ThePlayer->m_obj.xspeed = _left_right_speeds[index];
 	  	  	  ThePlayer->m_obj.flip(SDL_FLIP_HORIZONTAL);
 	  	  	  
 	  	  	  // set the bit saying the right key was pressed
@@ -378,7 +345,7 @@ static int _keyboard_normal(SDL_Event& event, GameMode* const gm, const uint8_t*
 	  	  	_key_sym_bits &= _key_sym_bitmasks[GMLevel_Key_Right] ^ 0xff;
 	  	  	
 	  	  	// freeze the player
-	  	  	ThePlayer->m_obj.set_x_vel(0);
+	  	  	ThePlayer->m_obj.xspeed = 0;
 	  	  }
 	  	  break;
 
@@ -409,9 +376,9 @@ static int _keyboard_normal(SDL_Event& event, GameMode* const gm, const uint8_t*
 	  	  	// the L key wasn't already pressed
 	  	  	if (! (_key_sym_bits & _key_sym_bitmasks[GMLevel_Key_l])) {
 	  	  	  // print X and Y position of tile the player is in
-	  	  	  printf("Player's location: (%d,%d) pixels; (%d,%d) tiles\nTile number: %d\n", (int) ThePlayer->m_obj.x,
-	  	  	         (int) ThePlayer->m_obj.y, (int) ThePlayer->m_obj.x / TILE_WIDTH,
-	  	  	         (int) ThePlayer->m_obj.y / TILE_HEIGHT, (int) GetTile(ThePlayer->m_obj.x, ThePlayer->m_obj.y));
+	  	  	  printf("Player's location: (%d,%d) pixels; (%d,%d) tiles\nTile number: %d\n", ThePlayer->m_obj.get_x(),
+	  	  	         ThePlayer->m_obj.get_y(), ThePlayer->m_obj.get_x() / TILE_WIDTH,
+	  	  	         ThePlayer->m_obj.get_y() / TILE_HEIGHT, (int) GetTile( ThePlayer->m_obj.get_x(), ThePlayer->m_obj.get_y() ));
 	  	  	  
 	  	  	  // activate bit saying the L key was pressed
 	  	  	  _key_sym_bits |= _key_sym_bitmasks[GMLevel_Key_l];
@@ -431,12 +398,13 @@ static int _keyboard_normal(SDL_Event& event, GameMode* const gm, const uint8_t*
 	  	  	if (! (_key_sym_bits & _key_sym_bitmasks[GMLevel_Key_Escape])) {
 	  	  	  // quit the game and fade out
 	  	  	  Flags.set(FADEOUT | QUITGAME);
+	  	  	  Sound_FadeOutMusic(1000);
 
 	  	  	  // change to gamemode 0 after 60 frames
 	  	  	  GM_ChangeGamemode(gm, 0, 60);
 
 	  	  	  // zero out the player's velocity so it smooths to a halt
-	  	  	  ThePlayer->m_obj.set_x_vel(0);
+	  	  	  ThePlayer->m_obj.xspeed = 0;
 
 	  	  	  // set this bit so this block only executes once
 	  	  	  _key_sym_bits |= _key_sym_bitmasks[GMLevel_Key_Escape];

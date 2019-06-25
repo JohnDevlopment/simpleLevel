@@ -1,42 +1,27 @@
-// checks to make sure certain marcos are defined
 #include "check_global_defines.hpp"
-
-// standard/SDL headers; interpret or allocate memory
 #include "stdinc.h"
 #include "sdl_incs.h"
 #include "memory.hpp"
-
-// game namespace: holds program-wide resources
 #include "game.hpp"
-
-// Tcl scripts
 #include "tcl.hpp"
-
-/* 1. Load so files and use them to load assets, such as sound chunks.
-   2. Sound API -- needs so files to load sound chunks. */
 #include "res.hpp"
-#include "sound.hpp"
-
-/* Level-related code.
-   1. Functions and data that pertain to the level structure.
-   2. GameMode functions and definition. GameModes are the basic subdivisions of the game.
-   3. Detects input from the user and parses it accordingly. Responses to such are dependent on the gamemode. */
 #include "levelcode.hpp"
 #include "gamemode.hpp"
 #include "event.hpp"
-
-// log functionality
 #include "log.hpp"
-
-// platform-specific headers
 #include "windows_or_linux.hpp"
-
-// efficiently track execution time with SDL_GetTicks()
 #include <timer_class.hpp>
-
-// std::vector; modify or query containers
 #include <vector>
 #include <algorithm>
+
+/* Includes definitions for SFXData and MusData.
+   Includes function declarations and links to
+   the headers for the Ogg Vorbis library.
+   OV_EXCLUDE_STATIC_CALLBACKS is defined to stop
+   vorbis.h from defining static globals in this file.
+*/
+#define OV_EXCLUDE_STATIC_CALLBACKS
+#include "sound.hpp"
 
 // private
 static PROGRAM program;
@@ -99,6 +84,7 @@ int main (int argc, char* argv[]) {
 	  	// user clicks on the 'X' button on the titlebar
 	  	if (event->type == SDL_QUIT) {
 	  	  ret = 1;
+	  	  game::Flags.set(LEVEL_CLEANUP | QUITGAME);
 	  	  break;
 	  	}
 

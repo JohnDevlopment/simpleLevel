@@ -1,50 +1,52 @@
 // standard includes
 #include "headers/stdinc.h"
 
-// Tcl scripts
-#include "headers/tcl.hpp"
+#include "sound.hpp"
+#include "tcl.hpp"
+#include "sprite_router.hpp"
+#include "levelcode.hpp"
+#include "triggers.hpp"
+#include "log.hpp"
+#include "background_images.hpp"
+#include "camera.hpp"
+#include "levelinfo.hpp"
+#include "color.h"
+#include "memory.hpp"
+#include "string.h"
 
-// sprite function
-#include "headers/sprite_router.hpp"
-
-// level data and functions
-#include "headers/levelcode.hpp"
-
-// event triggers
-#include "headers/triggers.hpp"
-
-// logging system
-#include "headers/log.hpp"
-
-#include "headers/background_images.hpp"
-#include "headers/camera.hpp"
-#include "headers/levelinfo.hpp"
-
-#include "headers/color.h"
-
-#include <memory>
+#define TCL_CC 1
 
 using namespace std;
 
 #define REPORTERROR(interp)	cerr << "Error at tcl.cc line " << __LINE__ << ": "; \
 				reportError(interp);
 
+#ifndef JOIN
+ #define JOIN(a,b)  JOIN1(a,b)
+ #define JOIN1(a,b) a##b
+#endif
+
+// functions from other source files
+void _gm_level_saveMusData(MusData* mus);
+MusData* _gm_level_getMusData();
+
 // private function declarations
 static int _TclCC_Level_PlayerLoc(ClientData, Tcl_Interp*, int, Tcl_Obj* const[]);
+static int _TclCC_SendData(ClientData, Tcl_Interp*, int, Tcl_Obj* const[]);
 static int _TclNsCmd_BackgroundFunctions_LoadImage(ClientData, Tcl_Interp*, int, Tcl_Obj* const[]);
 static int _TclNsCmd_BackgroundFunctions_SetColor(ClientData, Tcl_Interp*, int, Tcl_Obj* const[]);
 static int _TclNsCmd_BackgroundFunction_OffsetImage(ClientData, Tcl_Interp*, int, Tcl_Obj* const[]);
 static int _TclNsCmd_BackgroundFunction_SetSpeeds(ClientData, Tcl_Interp*, int, Tcl_Obj* const[]);
+static int _TclNsCmd_Sound_Music(ClientData, Tcl_Interp*, int, Tcl_Obj* const[]);
 static JColor getColorFromStr(Tcl_Interp* interp, const char* str);
 static int reportError(Tcl_Interp*);
 static void setErrorResult(Tcl_Interp*, const char*);
 static int createNewBackgroundObj(Tcl_Interp*, int, int, float, float);
 
-// interpreter
 Tcl_Interp* gInterp = nullptr;
-
-// current level
 char* CurrentLevel = nullptr;
+
+#include "tcl/tcl_pointer_obj_type.cxx"
 
 // public functions //
 int TclCC_AddToDict(Tcl_Interp* interp, Tcl_Obj** dict, const char* key, const char* val) {
@@ -73,6 +75,8 @@ return ptr_return;
 }
 
 int TclCC_Init(PROGRAM* const program) {
+	Tcl_ObjType* typePtr;
+	
 	Log_Cout("Initializing Tcl\n");
 
 	// create Tcl interpreter
@@ -95,8 +99,9 @@ int TclCC_Init(PROGRAM* const program) {
 	  return TCL_ERROR;
 	}
 
-	// source a script file that creates a namespace called BackgroundFunctions
+	// source scripts that define command namespaces
 	Tcl_Eval(gInterp, "source [file join scripts nsbackground.tcl]");
+	Tcl_Eval(gInterp, "source [file join scripts nssound.tcl]");
 
 	// name of command
 	vector<char> vName(100);
@@ -132,6 +137,20 @@ int TclCC_Init(PROGRAM* const program) {
 	  REPORTERROR(gInterp);
 	}
 
+	// add the following commands to namespace Sound
+	// music: mapped to subcommand "music"
+	typePtr = _tcl_createNewObjType_PtrObj();
+	strcpy( (char*) vName.data(), "Sound::musicCmd" );
+	if ( ! Tcl_CreateObjCommand(gInterp, vName.data(), _TclNsCmd_Sound_Music, typePtr, _tcl_deleteObjType) ) {
+	  REPORTERROR(gInterp);
+	}
+
+	// add command: SendData
+	strcpy( (char*) vName.data(), "SendData" );
+	if ( ! Tcl_CreateObjCommand(gInterp, vName.data(), _TclCC_SendData, nullptr, nullptr) ) {
+	  REPORTERROR(gInterp);
+	}
+
 	// source the script file that contains Tcl procedures
 	Tcl_Eval(gInterp, "source [file join scripts main.tcl]");
 
@@ -139,12 +158,12 @@ return TCL_OK;
 }
 
 void TclCC_Quit() {
-	Tcl_UnlinkVar(gInterp, "CurrentLevel"); // unlink CurrentLevel
-	Tcl_Free(CurrentLevel);                 // free CurrentLevel
-	Tcl_DeleteInterp(gInterp);              // delete interpreter
+	Tcl_UnlinkVar(gInterp, "CurrentLevel");
+	Tcl_Free(CurrentLevel);
+	Tcl_DeleteInterp(gInterp);
 }
 
-// private functions //
+//////////////// private functions /////////////////////
 void setErrorResult(Tcl_Interp* interp, const char* msg) {
 	Tcl_Obj* result = Tcl_NewStringObj(msg, strlen(msg));
 	Tcl_SetObjResult(interp, result);
@@ -263,7 +282,6 @@ int createNewBackgroundObj(Tcl_Interp* interp, int id, int type, float factx, fl
 return code;
 }
 
-// args: id x y
 int _TclNsCmd_BackgroundFunction_SetSpeeds(ClientData cd, Tcl_Interp* interp, int objc, Tcl_Obj* const objv[]) {
 	if (objc != 4) {
 	  setErrorResult(interp, "wrong # args: should be Level_ConfBackground speeds id x_per y_per");
@@ -410,182 +428,6 @@ int _TclNsCmd_BackgroundFunctions_LoadImage(ClientData cd, Tcl_Interp* interp, i
 return retval;
 }
 
-//int _TclCC_Level_ConfBackground(ClientData cd, Tcl_Interp* interp, int objc, Tcl_Obj* const objv[]) {
-//	static Background_Base* pBg = nullptr;
-//	static unique_ptr<int[]> xy(nullptr);
-//	
-//	short int retval = TCL_OK; // return code
-//	int iID; // id of background, or -1 for 
-//	double* dpFactors = nullptr;
-
-
-//	// number of arguments:
-//	switch (objc) {
-//	  default:
-//	  	{
-//	  	  stringstream ss;
-//	  	  ss << "wrong # args: should be (1) background load idx file colorkey, " \
-//	  	  << "(2) background id x_factor y_factor, or (3) background -1 color opacity";
-
-//	  	  // new string
-//	  	  char* sResult = Tcl_Alloc(ss.str().length() + 1);
-//	  	  strcpy(sResult, ss.str().c_str());
-
-//	  	  Tcl_SetResult(interp, sResult, TCL_DYNAMIC); // set return value
-//	  	  retval = TCL_ERROR;
-//	  	  break;
-//	  	}
-
-
-//	  
-
-//	  case 5:
-//	  	{
-//	  	  // first argument must be "load"
-//	  	  string sTemp = Tcl_GetStringFromObj(objv[1], nullptr);
-//	  	  if (sTemp != "load" && sTemp != "offset") {
-//	  	  	retval = TCL_ERROR;
-//	  	  	Tcl_SetObjResult(interp, Tcl_NewStringObj("invalid first argument to background (4 args): should be \"load\"", -1));
-//	  	  	break;
-//	  	  }
-
-//	  	  // id
-//	  	  if(Tcl_GetIntFromObj(interp, objv[2], &iID) == TCL_ERROR) {
-//	  	  	// error message
-//	  	  	Tcl_Obj* result = Tcl_NewStringObj("error: second argument to background is invalid: ", -1);
-//	  	  	Tcl_AppendObjToObj(result, Tcl_GetObjResult(interp));
-//	  	  	Tcl_SetObjResult(interp, result);
-//	  	  	retval = TCL_ERROR; // return code
-//	  	  	break;
-//	  	  }
-
-//	  	  // background offset 0[id] 3[x] 5[y]
-//	  	  if (sTemp == "offset") {
-//	  	  	unique_ptr<int[]> args(new int[3]);
-//	  	  	
-//	  	  	for (int x = 0; x < 3; ++x) {
-//	  	  	  // convert objv[2-4] to integers
-//	  	  	  if (Tcl_GetIntFromObj(interp, objv[x+2], args.get()+x) == TCL_ERROR) {
-//	  	  	  	retval = TCL_ERROR;
-//	  	  	  	break;
-//	  	  	  }
-//	  	  	}
-//	  	  	
-//	  	  	iID = args[0];
-//	  	  	xy = std::move(args); // transfer args to xy
-//	  	  	break; // don't complete the rest of the code
-//	  	  }
-//	  	  if (retval == TCL_ERROR) break;
-//	  	  
-//	  	  // colorkey
-//	  	  uint32_t uiColorkey;
-//	  	  {
-//	  	  	JColor tempcolor = getColorFromStr(interp, Tcl_GetStringFromObj(objv[4], nullptr));
-//	  	  	uiColorkey = JColor2Int(tempcolor);
-//	  	  }
-
-//	  	  // file string
-//	  	  sTemp = Tcl_GetStringFromObj(objv[3], nullptr);
-//	  	  retval = loadBackgroundImage(interp, iID, sTemp.c_str(), uiColorkey);
-//	  	  break;
-//	  	}
-
-//	  case 4:
-//	  	{
-//	  	  // id
-//	  	  if(Tcl_GetIntFromObj(interp, objv[1], &iID) == TCL_ERROR) {
-//	  	  	// error message
-//	  	  	Tcl_Obj* result = Tcl_NewStringObj("error: second argument to background is invalid: ", -1);
-//	  	  	Tcl_AppendObjToObj(result, Tcl_GetObjResult(interp));
-//	  	  	Tcl_SetObjResult(interp, result);
-//	  	  	retval = TCL_ERROR; // return code
-//	  	  	break;
-//	  	  }
-
-//	  	  // change background color
-//	  	  if (iID < 0) {
-//	  	  	JColor color = getColorFromStr(interp, Tcl_GetStringFromObj(objv[2], nullptr)); // convert string to color value
-//	  	  	int op = 255;
-//	  	  	Tcl_GetIntFromObj(interp, objv[3], &op); // integeral value
-//	  	  	color.alpha = op;
-//	  	  	game::bgcolor(color); // change bg color
-//	  	  	break;
-//	  	  }
-
-//	  	  // argument out of range
-//	  	  else if (iID >= NUM_BGS) {
-//	  	  	char* sResult = Tcl_Alloc(79);
-//	  	  	std::sprintf(sResult, "invalid first arg to Level_ConfBackground: %d. Must between 0 and %d", iID, NUM_BGS); // 68
-//	  	  	Tcl_SetResult(interp, sResult, TCL_DYNAMIC);
-//	  	  	retval = TCL_ERROR;
-//	  	  	break;
-//	  	  }
-
-//	  	  // floating point arguments
-//	  	  unique_ptr<double[]> temp_dbls(new double[2]);
-//	  	  
-//	  	  Tcl_GetDoubleFromObj(interp, objv[2], temp_dbls.get());
-//	  	  Tcl_GetDoubleFromObj(interp, objv[3], temp_dbls.get()+1);
-//	  	  
-//	  	  dpFactors = temp_dbls.release();
-//	  	  break;
-//	  	}
-//	}
-
-//	// if success in extracting arguments
-//	if (dpFactors) {
-//	  int iWhich = 0;
-//	  if (dpFactors[0])
-//	  	iWhich |= BG_X;
-//	  
-//	  if (dpFactors[1])
-//	  	iWhich |= BG_Y;
-//	  
-//	  // which class to declare an object of
-//	  switch (iWhich) {
-//	  	default: break;
-//	  	
-//	  	case BG_X:
-//	  	  pBg = new Background_X(dpFactors[0], &camera::CamXSpd);
-//	  	  if (xy) {
-//	  	  	pBg->x() = xy[1] * TILE_WIDTH;
-//	  	  	xy.reset();
-//	  	  }
-//	  	  break;
-//	  	
-//	  	case BG_Y:
-//	  	  pBg = new Background_Y(dpFactors[1], &camera::CamXSpd);
-//	  	  if (xy) {
-//	  	  	pBg->y() = xy[2] * TILE_HEIGHT;
-//	  	  	xy.reset();
-//	  	  }
-//	  	  break;
-//	  	
-//	  	case BG_XY:
-//	  	  pBg = new Background_XY(dpFactors[0], dpFactors[1], &camera::CamXSpd, &camera::CamYSpd);
-//	  	  if (xy) {
-//	  	  	pBg->x() = xy[1] * TILE_WIDTH;
-//	  	  	pBg->y() = xy[2] * TILE_HEIGHT;
-//	  	  	xy.reset();
-//	  	  }
-//	  	  break;
-//	  }
-//	  
-//	  delete[] dpFactors;
-//	  dpFactors = nullptr;
-//	}
-
-//	// replace old background class with new one
-//	if (pBg) {
-//	  using camera::BGLayers;
-//	  delete BGLayers[iID];
-//	  BGLayers[iID] = pBg;
-//	  pBg = nullptr;
-//	}
-
-//return retval;
-//}
-
 int _TclCC_Level_PlayerLoc(ClientData cd, Tcl_Interp* interp, int objc, Tcl_Obj* const objv[]) {
 	int iCode;
 
@@ -623,12 +465,234 @@ int _TclCC_Level_PlayerLoc(ClientData cd, Tcl_Interp* interp, int objc, Tcl_Obj*
 
 	// if entrance code is -1, that means the we are defining the main player entrace
 	if (iEnt == -1) {
-	  level::ThePlayer->m_obj.x = x * TILE_WIDTH;
-	  level::ThePlayer->m_obj.y = y * TILE_HEIGHT;
+	  using level::ThePlayer;
+	  ThePlayer->m_obj.set_xy(x * TILE_WIDTH, y * TILE_HEIGHT);
 	}
 
 	// output result of command
 	cout << "Player`s location for entrance " << iEnt << " is at (" << x << ',' << y << ')' << endl;
 
 return TCL_OK;
+}
+
+// args: SendData <string> <PtrObj>
+int _TclCC_SendData(ClientData cd, Tcl_Interp* interp, int objc, Tcl_Obj* const objv[]) {
+	if (objc != 3) {
+	  setErrorResult(interp, "wrong # args: should be SendData <string> <PtrObj>");
+	  return TCL_ERROR;
+	}
+	
+	Tcl_Obj* ptrObj = objv[2];
+	std::string sArg = Tcl_GetStringFromObj(objv[1], nullptr);
+	
+	assert(ptrObj != nullptr);
+	assert(ptrObj->typePtr != nullptr);
+	assert( strcmp(ptrObj->typePtr->name, "Pointer") == 0 );
+	
+	if (sArg == "gm_level_music") {
+	  PointerObjInfo* info = (PointerObjInfo*) ptrObj->internalRep.otherValuePtr;
+	  assert(info->length == sizeof(MusData));
+	  
+	  _gm_level_saveMusData( reinterpret_cast<MusData*>(info->address) );
+	  info->address = nullptr;
+	  info->length = 0;
+	}
+	
+return TCL_OK;
+}
+
+//////////// functions to help _TclNsCmd_Sound_Music /////////////////
+// syntax: Level_SoundCmd music load <file> ?<vol = MAX_VOLUME>? ?<loop = 0.0>?
+// args start at "load" | 1. load 2. <file> 3. ?<vol = MAX_VOLUME>? 4. ?<loop = 0.0>?
+static int loadMusicFileIntoObj(Tcl_ObjType* typePtr, Tcl_Interp* interp, int objc, Tcl_Obj* const objv[]) {
+	Tcl_Obj* result;
+	PointerObjInfo* ptrInfo;
+	char sFile[100];
+	MusData* mus;
+	int iVolume = MAX_VOLUME;
+	
+	if (objc < 2 && objc > 4) {
+	  setErrorResult(interp, "wrong # args: should be Level_SoundCmd music load <file> ?<vol = MAX_VOLUME>? ?<loop = 0.0>?");
+	  return TCL_ERROR;
+	}
+	
+	// allocate TclObj structure
+	result = Tcl_NewObj();
+	if (result == nullptr) {
+	  return TCL_ERROR;
+	}
+	
+	// load music file
+	std::memset(sFile, 0, 100);
+	{
+	  const char* temp = Tcl_GetStringFromObj(objv[2], nullptr);
+	  
+	  strcpy(sFile, "audio/music/");
+	  String_strlcat(sFile, temp, 100);
+	}
+	mus = Sound_LoadMUS(sFile);
+	if (! mus) {
+	  setErrorResult(interp, "Failed to load music file");
+	  Tcl_DecrRefCount(result);
+	  return TCL_ERROR;
+	}
+	
+	// get arguments and pass to MusData
+	if (objc >= 4) {
+	  Tcl_GetIntFromObj(nullptr, objv[3], &iVolume);
+	  if (iVolume < 0)
+	  	iVolume = 0;
+	  else if (iVolume > MAX_VOLUME)
+	  	iVolume = MAX_VOLUME;
+	  
+	  MusData_SetVolume(mus, iVolume);
+	}
+	
+	{
+	  double temp = 0.0;
+	  
+	  if (objc == 5) {
+	  	Tcl_GetDoubleFromObj(nullptr, objv[4], &temp);
+	  	if (temp < 0.0)
+	  	  temp = 0.0;
+	  	else if (temp > 60.0)
+	  	  temp = 60.0;
+	  }
+	  mus->lpos = temp;
+	}
+	
+	// allocate PointerObjInfo to contain MusData and be managed internally by Tcl
+	ptrInfo = (PointerObjInfo*) TclCC_AllocChar(sizeof(PointerObjInfo));
+	ptrInfo->type = PTROBJ_MUSDATA;
+	ptrInfo->address = mus;
+	ptrInfo->length = sizeof(MusData);
+	
+	// assign struct to object
+	result->internalRep.otherValuePtr = ptrInfo;
+	result->typePtr = typePtr;
+	result->bytes = nullptr;
+	
+	// set object as result of function
+	Tcl_SetObjResult(interp, result);
+	
+return TCL_OK;
+}
+
+// syntax: Level_SoundCmd music play <loop_pos> ?<loops>? ?<volume>? ?<dphase>?
+// args: start at "play" | 1. play 2. loop_pos 3. loops 4. volume 5. dphase
+static int playLevelMusic(Tcl_Interp* interp, int objc, Tcl_Obj* const objv[]) {
+	int retval;
+	int iVolume = -1;
+	int iLoops = 0;
+	int iPhase = -1;
+	double dLoopPos = -1.0;
+	std::string sErrors;
+	MusData* mus;
+	
+	if (objc < 3 || objc > 6) {
+	  setErrorResult(interp, "wrong # args: should be Level_SoundCmd music play <loop_pos> ?<loops>? ?<volume>? ?<dphase>?");
+	  return TCL_ERROR;
+	}
+	
+	// checks any errors from a Tcl lib function
+	auto AppendError = [&sErrors](const char* _error, int _code) -> void {
+	  if (_code == TCL_ERROR) {
+	  	if (_error && strlen(_error) > 0) {
+	  	  sErrors += _error;
+	  	  sErrors += "\n";
+	  	}
+	  }
+	};
+	
+	// retrieve arguments
+	sErrors = "\t";
+	for (int x = 0; x < objc; ++x) {
+	  switch (x) {
+	  	default: break;
+	  	
+	  	case 2:
+	  	  retval = Tcl_GetDoubleFromObj(interp, objv[x], &dLoopPos);
+	  	  AppendError( Tcl_GetStringResult(interp), retval );
+	  	  break;
+	  	
+	  	case 3:
+	  	  retval = Tcl_GetIntFromObj(interp, objv[x], &iLoops);
+	  	  AppendError( Tcl_GetStringResult(interp), retval );
+	  	  break;
+	  	
+	  	case 4:
+	  	  retval = Tcl_GetIntFromObj(interp, objv[x], &iVolume);
+	  	  AppendError( Tcl_GetStringResult(interp), retval );
+	  	  break;
+	  	
+	  	case 5:
+	  	  retval = Tcl_GetIntFromObj(interp, objv[x], &iPhase);
+	  	  AppendError( Tcl_GetStringResult(interp), retval );
+	  	  break;
+	  }
+	}
+	
+	// iLoops -1, 0+
+	if (iLoops < -1) {
+	  iLoops = -1;
+	}
+	
+	// dLoopPos 0 ~ 60
+	if (dLoopPos < 0.0) {
+	  dLoopPos = 0.0;
+	}
+	else if (dLoopPos > 60.0) {
+	  dLoopPos = 60.0;
+	}
+	
+	// log errors that occurred
+	if (retval == TCL_ERROR) {
+	  Log_Cerr("Errors present in tcl.cc, playLevelMusic:\n%s", sErrors.c_str());
+	  retval = TCL_OK;
+	}
+	
+	// attempt to play the music in question
+	mus = _gm_level_getMusData();
+	if (mus) {
+	  mus->lpos = dLoopPos;
+	  if ( Sound_PlayMusic(mus, iLoops) < 0 ) {
+	  	retval = TCL_ERROR;
+	  	setErrorResult(interp, "failed to play music for level");
+	  }
+	  else if (iLoops > 0) {
+	  	Sound_PauseMusic();
+	  	if (iVolume >= 0 && iVolume <= MAX_VOLUME) {
+	  	  Sound_VolumeMusic(iVolume);
+	  	}
+	  }
+	}
+	
+return retval;
+}
+
+// args: Level_SoundCmd music <load|play> ?args...?
+int _TclNsCmd_Sound_Music(ClientData cd, Tcl_Interp* interp, int objc, Tcl_Obj* const objv[]) {
+	int retval;
+	
+	if (objc < 2) {
+	  setErrorResult(interp, "Not enough args to Level_SoundCmd: subcommand should be next");
+	  return TCL_ERROR;
+	}
+	
+	std::string sArg = Tcl_GetStringFromObj(objv[1], nullptr);
+	if (sArg == "load") {
+	  retval = loadMusicFileIntoObj((Tcl_ObjType*) cd, interp, objc, objv);
+	}
+	else if (sArg == "play") {
+	  retval = playLevelMusic(interp, objc, objv);
+	}
+	else {
+	  std::string sError = "invalid subcommand \"";
+	  sError += sArg + "\"";
+	  sError += ": should be one of load, play";
+	  setErrorResult(interp, sError.c_str());
+	  return TCL_ERROR;
+	}
+	
+return retval;
 }
