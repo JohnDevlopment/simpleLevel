@@ -7,15 +7,16 @@
 #include "sdl_incs.h"
 #include "sound.hpp"
 
+/* SFXData: holds audio data loaded from a WAV file. */
 struct SFXData {
-	bool allocated;
-	bool free;
-	uint8_t* abuf;
-	uint32_t alen;
-	SDL_AudioSpec specs;
+	bool allocated; // internal
+	bool free; // internal
+	uint8_t* abuf; // internal
+	uint32_t alen; // internal
+	SDL_AudioSpec specs; // internal
 	uint8_t volume;
 	int8_t channel;
-	int32_t loop;
+	int32_t loop; // internal
 };
 
 enum {
@@ -30,7 +31,15 @@ enum {
 
 #define NUMBER_OF_GLOBAL_SFX SFXCount
 
-inline void SFXData_Clear(SFXData* sfx, int vol) {
+INLINE void SFXData_SetVolume(SFXData* sfx, uint8_t vol) {
+	sfx->volume = vol;
+}
+
+INLINE void SFXData_SetChannel(SFXData* sfx, int8_t ch) {
+	sfx->channel = ch;
+}
+
+INLINE void SFXData_Clear(SFXData* sfx, uint8_t vol) {
 	if (sfx) {
 	  sfx->allocated = false;
 	  sfx->free = false;

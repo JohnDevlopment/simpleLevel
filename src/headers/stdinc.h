@@ -30,4 +30,14 @@
 
 #define totype(src, type) reinterpret_cast<type>(src)
 
+#if defined(__cplusplus)
+  #if __cplusplus >= 201103L
+    #define cast(src, type) reinterpret_cast<type>(src)
+  #else
+    #define cast(src, type) ((type) src)
+  #endif
+#else
+  #define cast(src, type) ((type) src)
+#endif /* __cplusplus */
+
 #endif /* STDINC_H_INCLUDED */
