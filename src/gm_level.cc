@@ -1,68 +1,47 @@
-// global game data and functions
-#include "headers/game.hpp"
+#include "game.hpp"
+#include "levelcode.hpp"
+#include "levelinfo.hpp"
+#include "event_defines.hpp"
+#include "sound.hpp"
+#include "tile_collision.hpp"
+#include "camera.hpp"
+#include "sprite_router.hpp"
+#include "triggers.hpp"
+#include "tcl.hpp"
+#include "sprites/sprite000_def.h"
 
-// data and functions that pertain to a level
-#include "headers/levelcode.hpp"
+#define NDEBUG
+#include "log.hpp"
+#include "math.hpp"
+#include "gm_level.hpp"
 
-// functions that return various information about the level
-#include "headers/levelinfo.hpp"
-
-// defines a list of event types
-#include "headers/event_defines.hpp"
-
-// sound system
-#include "headers/sound.hpp"
-
-// tile collision system
-#include "headers/tile_collision.hpp"
-
-// camera system
-#include "headers/camera.hpp"
-
-// sprite system
-#include "headers/sprite_router.hpp"
-
-// event trigger system
-#include "headers/triggers.hpp"
-
-// Tcl system
-#include "headers/tcl.hpp"
-
-// logging system
-#include "headers/log.hpp"
-
-// math functions
-#include "headers/math.hpp"
-
-// gamemode headers
-#include "headers/gm_level.hpp"
-
-// private types, variables, etc.
 #include "private/player_data_def.h"
+#include "particle_sprite_def.h"
 
 using namespace std;
 using level::ThePlayer;
 using level::levelEvents;
 using level::update;
+using game::HeapStack;
 
 // private function prototypes
 static int _gm_level_cleanup(GameMode* const, const PROGRAM&);
 static int _gm_level_main(GameMode* const, const PROGRAM&);
 static int _gm_level_init(GameMode* const, const PROGRAM&);
-static uint32_t timerCallback_playLevelMusic(uint32_t, void*);
 
 // priority list of events to process
-static StaticDArray<uint8_t,7> _key_sym = {GMLevel_Key_s, GMLevel_Key_Left, GMLevel_Key_Right,
- GMLevel_Key_Up, GMLevel_Key_l, GMLevel_Key_Escape, GMLevel_Key_Buffer};
-
-// input bit flags: each bit corresponds to whether a certain key is being held down
-static uint8_t _key_sym_bits = 0;
+static const uint8_t _key_sym[] = {
+	GMLevel_Key_s, GMLevel_Key_Left, GMLevel_Key_Right,
+	GMLevel_Key_Up, GMLevel_Key_Down, GMLevel_Key_l, GMLevel_Key_Escape,
+	GMLevel_Key_Buffer
+};
 
 // list of scancodes
-static StaticDArray<SDL_Scancode,9> _scancodes = {
+static StaticDArray<SDL_Scancode,10> _scancodes = {
 	SDL_SCANCODE_UNKNOWN, SDL_SCANCODE_UNKNOWN, SDL_SCANCODE_UNKNOWN,
 	SDL_SCANCODE_UNKNOWN, SDL_SCANCODE_UNKNOWN, SDL_SCANCODE_UNKNOWN,
-	SDL_SCANCODE_UNKNOWN, SDL_SCANCODE_UNKNOWN, SDL_SCANCODE_UNKNOWN
+	SDL_SCANCODE_UNKNOWN, SDL_SCANCODE_UNKNOWN, SDL_SCANCODE_UNKNOWN,
+	SDL_SCANCODE_UNKNOWN
 };
 
 // data to forward to Player::Main
@@ -79,44 +58,45 @@ MusData* _gm_level_getMusData() {return LevelMusic;}
 
 //////////////// functions to help: gm_level MAIN routine /////////////////////
 static uint32_t timerCallback_playLevelMusic(uint32_t interval, void* data) {
-	// play level music on loop
-	Sound_ResumeMusic();
+	
+	if ( Sound_PlayingMusic() ) {
+	  if ( Sound_PausedMusic() ) {
+	  	Sound_ResumeMusic();
+	  }
+	}
+	else {
+	  if (LevelMusic) {
+	  	Sound_PlayMusic(LevelMusic, -1);
+	  }
+	}
 
 return 0;
 }
 
-/* Notes to self: firstly, _key_sym_bits is a field of bits that each correspond to a key being pressed. Mask the bits
+/* Notes to self: firstly, uipKeyBits is a field of bits that each correspond to a key being pressed. Mask the bits
    using _key_sym_bitmasks indexed by a value of GMLevel_KeyListSym (header: gm_level_defs.h). That is how you
    can tell what inputs have been inputted. */
 static int _main_normal(GameMode* const gm, const PROGRAM&) {
 	using namespace level;
 	using game::FrameCounter;
 	using game::Flags;
-
-	_player_data->what = 1;
-
+	
 	// update the level
 	update(gm, _player_data.getp(), 0);
-
+	
 	// render the black screen if the right flags are set
 	if (Flags.mask(FADING | QUITGAME))
 	  BG_BLACK.blit();
-
+	
 	// if the user is quitting the game...
 	if (Flags.mask(QUITGAME)) {
 	  // activate the level's cleanup routine
 	  if (! Flags.mask(LEVEL_CLEANUP)) {
-	  	// enable the level cleanup code
 	  	Flags.set(LEVEL_CLEANUP);
-	  	
-	  	// change to gamemode 0 after 75 frames (2.5 seconds)
 	  	GM_ChangeGamemode(gm, 0, 75);
 	  }
 	}
-
-	_player_data->what = 2;
-	ThePlayer->Main( _player_data.getp() );
-
+	
 return 0;
 }
 
@@ -197,12 +177,18 @@ int _gm_level_cleanup(GameMode* const gm, const PROGRAM& program) {
 	game::bgcolor(black);
 	
 	// clean up the level data
+{
+	int iFlags = 0;
+	
 	if ( Flags.mask(LEVEL_CLEANUP) ) {
 	  Sound_FreeMUS(LevelMusic);
 	  LevelMusic = nullptr;
-	  Flags.unset(LEVEL_CLEANUP);
+	  iFlags |= LEVEL_CLEANUP;
 	}
-	
+	iFlags |= QUITGAME;
+	Flags.unset(iFlags);
+}
+		
 return 0;
 }
 
@@ -214,6 +200,7 @@ int _gm_level_init(GameMode* const gm, const PROGRAM& program) {
 	  _scancodes[SCAN_LEFT]   = SDL_GetScancodeFromKey(SDLK_LEFT);
 	  _scancodes[SCAN_RIGHT]  = SDL_GetScancodeFromKey(SDLK_RIGHT);
 	  _scancodes[SCAN_UP]     = SDL_GetScancodeFromKey(SDLK_UP);
+	  _scancodes[SCAN_DOWN]   = SDL_GetScancodeFromKey(SDLK_DOWN);
 	  _scancodes[SCAN_L]      = SDL_GetScancodeFromKey(SDLK_l);
 	  _scancodes[SCAN_ESCAPE] = SDL_GetScancodeFromKey(SDLK_ESCAPE);
 	  _scancodes[SCAN_Q]      = SDL_GetScancodeFromKey(SDLK_q);
@@ -223,11 +210,13 @@ int _gm_level_init(GameMode* const gm, const PROGRAM& program) {
 	  _scancodes[SCAN_END]    = SDL_GetScancodeFromKey(SDLK_UP);
 	}
 
-	// reset all keys
-	_key_sym_bits = 0;
-
 	// save data to private struct
-	_player_data->KeySymBits = &_key_sym_bits;
+	_player_data->KeySymBits = reinterpret_cast<uint16_t*>(HeapStack + (int) HS_KeyBits);
+	_player_data->KeySymBitsFirstFrame = reinterpret_cast<uint16_t*>(HeapStack);
+
+	// reset all keys
+	* const_cast<uint16_t*>(_player_data->KeySymBits) = 0;
+	* const_cast<uint16_t*>(_player_data->KeySymBitsFirstFrame) = 0;
 
 	// after a certain amount of time, play the level's music
 	SDL_TimerID timer = SDL_AddTimer(2000, timerCallback_playLevelMusic, nullptr);
@@ -265,111 +254,115 @@ int gm_level(void* const gamemode_void, const PROGRAM& program) {
 return functions[index](gm, program);
 }
 
+static void eventBits(uint16_t& A, uint16_t& B, const int bit) {
+	if (! ((A | B) & bit)) {
+	  A |= bit;
+	}
+	else {
+	  if (! (B & bit)) {
+	  	A &= bit ^ 0xffff;
+	  	B |= bit;
+	  }
+	}
+}
+
 // event functions //
 static int _keyboard_normal(SDL_Event& event, GameMode* const gm, const uint8_t* keystates) {
 	using game::Flags;
 	using game::MiscTimer;
-
-	// left and right movement speeds (format: right_normal, right_fast, left_normal, left_fast)
-	constexpr float _left_right_speeds[4] = {2.5f, 3, -2.5f, -3};
-
-	// parse events
-	bool faster = false;
-
+	
+	uint16_t* uipKeyBits = reinterpret_cast<uint16_t*>(HeapStack + (int) HS_KeyBits);
+	uint16_t* uipKeyFirst = reinterpret_cast<uint16_t*>(HeapStack);
+	
 	for (uint8_t x = 0; x < GMLevel_Key_NumOfValues; ++x) {
-	  uint8_t index = (uint8_t) faster;
-
-	  // behavior depending on key
+	  uint16_t uiFirst = *uipKeyFirst;
+	  uint16_t uiBits  = *uipKeyBits;
+	  
+	  // list of keys being parsed
 	  switch (_key_sym[x]) {
-	  	// when the S key is held, after a delay speed up the player
+	  	default: break;
+	  	
 	  	case GMLevel_Key_s:
 	  	  if (keystates[_scancodes[SCAN_S]]) {
-	  	  	// increment the timer until it reaches 10
-	  	  	if (MiscTimer < 10)
-	  	  	  ++MiscTimer;
-	  	  	
-	  	  	// when it reaches 10, let the player move faster
-	  	  	else
-	  	  	  faster = true;
+	  	  	eventBits(uiFirst, uiBits, 1);
 	  	  }
 	  	  else {
-	  	  	// decrease timer until it reaches 0
-	  	  	if (MiscTimer)
-	  	  	  --MiscTimer;
+	  	  	uiFirst &= 0xFFFE;
+	  	  	uiBits &= 0xFFFE;
 	  	  }
 	  	  break;
-
-	  	/* Pressing on the Left Arrow key. Make the player move left. Don't flip
-	  	the sprite image; it faces left by default. */
+	  	
 	  	case GMLevel_Key_Left:
-	  	  // if the left key is actually being pressed
 	  	  if (keystates[_scancodes[SCAN_LEFT]]) {
-	  	  	// if the right key isn't being pressed
-	  	  	if (! (_key_sym_bits & _key_sym_bitmasks[GMLevel_Key_Right])) {
-	  	  	  // assign a negative X speed to the player
-	  	  	  ThePlayer->m_obj.xspeed = _left_right_speeds[index+2]; // player move left
-	  	  	  
-	  	  	  // make the player face left
-	  	  	  ThePlayer->m_obj.flip(SDL_FLIP_NONE);
-	  	  	  
-	  	  	  // this bit signifies the left key was pressed
-	  	  	  _key_sym_bits |= _key_sym_bitmasks[GMLevel_Key_Left];
-	  	  	}
+	  	  	eventBits(uiFirst, uiBits, 2);
 	  	  }
-	  	  else if ( _key_sym_bits & _key_sym_bitmasks[GMLevel_Key_Left] ) {
-	  	  	// clear bit
-	  	  	_key_sym_bits &= _key_sym_bitmasks[GMLevel_Key_Left] ^ 0xff;
-	  	  	
-	  	  	// freeze the player
-	  	  	ThePlayer->m_obj.xspeed = 0;
+	  	  else {
+	  	  	uiFirst &= 0xFFFD;
+	  	  	uiBits &= 0xFFFD;
 	  	  }
 	  	  break;
-
-	  	/* Pressing on the Right Arrow Key. Make the player move and face right. Flip the image
-	  	horizontally. */
+	  	
 	  	case GMLevel_Key_Right:
-	  	  // if the right key is being pressed
 	  	  if (keystates[_scancodes[SCAN_RIGHT]]) {
-	  	  	// if the left key isn't being pressed
-	  	  	if (! (_key_sym_bits & _key_sym_bitmasks[GMLevel_Key_Left])) {
-	  	  	  // give the player a positive X speed and make it face right
-	  	  	  ThePlayer->m_obj.xspeed = _left_right_speeds[index];
-	  	  	  ThePlayer->m_obj.flip(SDL_FLIP_HORIZONTAL);
-	  	  	  
-	  	  	  // set the bit saying the right key was pressed
-	  	  	  _key_sym_bits |= _key_sym_bitmasks[GMLevel_Key_Right];
-	  	  	}
+	  	  	eventBits(uiFirst, uiBits, 4);
 	  	  }
-	  	  else if ( _key_sym_bits & _key_sym_bitmasks[GMLevel_Key_Right] ) {
-	  	  	// clear the bit
-	  	  	_key_sym_bits &= _key_sym_bitmasks[GMLevel_Key_Right] ^ 0xff;
-	  	  	
-	  	  	// freeze the player
-	  	  	ThePlayer->m_obj.xspeed = 0;
+	  	  else {
+	  	  	uiFirst &= 0xFFFB;
+	  	  	uiBits &= 0xFFFB;
 	  	  }
 	  	  break;
-
-	  	/* Pressing down on the Up Arrow key. Makes the player jump. Only responds on the
-	  	first frame of it being pressed. */
+	  	
 	  	case GMLevel_Key_Up:
 	  	  if (keystates[_scancodes[SCAN_UP]]) {
-	  	  	// only respond to the first frame the key is pressed
-	  	  	if (! (_key_sym_bits & _key_sym_bitmasks[GMLevel_Key_Up])) {
-	  	  	  // causes the player to jump
-	  	  	  ThePlayer->Jump();
-	  	  	  
-	  	  	  // set the bit that says the up key was pressed
-	  	  	  _key_sym_bits |= _key_sym_bitmasks[GMLevel_Key_Up];
+	  	  	eventBits(uiFirst, uiBits, 8);
+	  	  }
+	  	  else {
+	  	  	uiFirst &= 0xFFF7;
+	  	  	uiBits &= 0xFFF7;
+	  	  }
+	  	  break;
+	  	
+	  	case GMLevel_Key_Down:
+	  	  if ( keystates[_scancodes[SCAN_DOWN]] ) {
+	  	  	eventBits(uiFirst, uiBits, 16);
+	  	  }
+	  	  else {
+	  	  	uiFirst &= 0xFFEF;
+	  	  	uiBits &= 0xFFEF;
+	  	  }
+	  	  break;
+	  	
+	  	case GMLevel_Key_l:
+	  	  if (keystates[_scancodes[SCAN_L]]) {
+	  	  	eventBits(uiFirst, uiBits, 32);
+	  	  }
+	  	  else {
+	  	  	uiFirst &= 0xFFDF;
+	  	  	uiBits &= 0xFFDF;
+	  	  }
+	  	  break;
+	  	
+	  	case GMLevel_Key_Escape:
+	  	  if (keystates[_scancodes[SCAN_ESCAPE]]) {
+	  	  	if ( Flags.mask(FADEOUT | QUITGAME) ) {
+	  	  	  Sound_FadeOutMusic(1000);
+	  	  	  GM_ChangeGamemode(gm, 0, 60);
+	  	  	  ThePlayer->m_obj.xspeed = 0;
+	  	  	  ThePlayer->m_obj.frame = 0;
+	  	  	  Flags.set(FADEOUT | QUITGAME);
 	  	  	}
 	  	  }
-	  	  
-	  	  // clear the bit
-	  	  else {_key_sym_bits &= _key_sym_bitmasks[GMLevel_Key_Up] ^ 0xff;}
 	  	  break;
+	  }
 
-	  	/* Press the L key once. Prints out debug information about where the player is
+	  *uipKeyFirst = uiFirst;
+	  *uipKeyBits = uiBits;
+
+	  // behavior depending on key
+	  /*switch (_key_sym[x]) {
+	  	Press the L key once. Prints out debug information about where the player is
 	  	in the level. Coordinates are in screen units and tiles. Only responds on the
-	  	first frame of it being pressed. */
+	  	first frame of it being pressed.
 	  	case GMLevel_Key_l:
 	  	  // the L key was detected
 	  	  if (keystates[_scancodes[SCAN_L]]) {
@@ -388,33 +381,10 @@ static int _keyboard_normal(SDL_Event& event, GameMode* const gm, const uint8_t*
 	  	  // reset bit that says the L key was pressed
 	  	  else {_key_sym_bits &= _key_sym_bitmasks[GMLevel_Key_l] ^ 0xff;}
 	  	  break;
-	  	
-	  	/* Pressing down on the Escape key. Quits the game. Only responds once to the input and never
-	  	again. */
-	  	case GMLevel_Key_Escape:
-	  	  // if the Escape key was detected
-	  	  if (keystates[_scancodes[SCAN_ESCAPE]]) {
-	  	  	// if the Escape key wasn't already pressed
-	  	  	if (! (_key_sym_bits & _key_sym_bitmasks[GMLevel_Key_Escape])) {
-	  	  	  // quit the game and fade out
-	  	  	  Flags.set(FADEOUT | QUITGAME);
-	  	  	  Sound_FadeOutMusic(1000);
-
-	  	  	  // change to gamemode 0 after 60 frames
-	  	  	  GM_ChangeGamemode(gm, 0, 60);
-
-	  	  	  // zero out the player's velocity so it smooths to a halt
-	  	  	  ThePlayer->m_obj.xspeed = 0;
-
-	  	  	  // set this bit so this block only executes once
-	  	  	  _key_sym_bits |= _key_sym_bitmasks[GMLevel_Key_Escape];
-	  	  	}
-	  	  }
-	  	  break;
 
 	  	default: break;
-	  } // end switch()
-	} // end for()
+	  } // end switch()*/
+	}
 
 return 0;
 }

@@ -111,8 +111,8 @@ void camera::track() {
 	if (! Track) return;
 	
 	// track player's Y position and affect the camera accordingly
-	if (ThePlayer->m_obj.y >= 128) {
-	  int sprite_center = ThePlayer->m_obj.y + 32;
+	if (ThePlayer->m_obj.get_y() >= 128) {
+	  int sprite_center = ThePlayer->m_obj.get_y() + 32;
 	  
 	  // if player is above the 1/3 line of the camera
 	  if (sprite_center < cam.y + 160)
@@ -130,7 +130,7 @@ void camera::track() {
 	}
 	
 	// right edge of the player
-	int sprite_right_edge = ThePlayer->m_obj.x + 32;
+	int sprite_right_edge = ThePlayer->m_obj.get_x() + 32;
 	
 	// if camera is not moving or it is set to "slow down" mode, AND if the sprite is past a point
 	if ( /*(*/ ! _Camera || _Camera == CAMERA_SCROLL_SLOW_DOWN /*) && sprite_right_edge >= 320*/ ) {
@@ -139,7 +139,7 @@ void camera::track() {
 	  	_Camera = CAMERA_SCROLL_RIGHT;
 	  
 	  // scroll left if the player goes before the 213'th pixel in the camera region
-	  else if (ThePlayer->m_obj.x < (cam.x + 213))
+	  else if (ThePlayer->m_obj.get_x() < (cam.x + 213))
 	  	_Camera = CAMERA_SCROLL_LEFT;
 	}
 	
@@ -189,11 +189,11 @@ void camera::track() {
 	  	CamXSpd = LinearInterp(CamXSpd, -cam_spdx, cam_delta);
 	  	
 	  	// if the player goes past the 213th pixel in the camera region, slow the camera down
-	  	if (ThePlayer->m_obj.x > (cam.x + 213))
+	  	if (ThePlayer->m_obj.get_x() > (cam.x + 213))
 	  	  _Camera = CAMERA_SCROLL_SLOW_DOWN;
 	  	
 	  	// if the player goes behind the camera region's 149th pixel, scroll the camera faster
-	  	if (ThePlayer->m_obj.x < (cam.x + 149))
+	  	if (ThePlayer->m_obj.get_x() < (cam.x + 149))
 	  	  _Camera = CAMERA_SCROLL_FASTER_LEFT;
 	  	
 	  	// scroll the camera and background according to its current speed
@@ -207,7 +207,7 @@ void camera::track() {
 	  	CamXSpd = LinearInterp(CamXSpd, -cam_spdx2, cam_delta);
 	  	
 	  	// if the player goes past the 223rd pixel in the camera region, revert the camera back to its normal speed
-	  	if (ThePlayer->m_obj.x > (cam.x + 223))
+	  	if (ThePlayer->m_obj.get_x() > (cam.x + 223))
 	  	  _Camera = CAMERA_SCROLL_LEFT;
 	  	
 	  	// scroll the camera and background according to its current speed

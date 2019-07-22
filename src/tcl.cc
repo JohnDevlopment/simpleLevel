@@ -670,6 +670,28 @@ static int playLevelMusic(Tcl_Interp* interp, int objc, Tcl_Obj* const objv[]) {
 return retval;
 }
 
+// syntax: Level_SoundCmd music fade <ms>
+// args: start at "fade" | 1. fade 2. ms
+static int fadeOutMusic(Tcl_Interp* interp, int objc, Tcl_Obj* const objv[]) {
+	int iMs;
+	
+	if (objc != 3) {
+	  setErrorResult(interp, "wrong # args: should be Level_SoundCmd music fade <ms>");
+	  return TCL_ERROR;
+	}
+	
+	if ( Tcl_GetIntFromObj(interp, objv[2], &iMs) == TCL_ERROR ) {
+	  return TCL_ERROR;
+	}
+	
+	MusData* mus = _gm_level_getMusData();
+	if (mus) {
+	  Sound_FadeOutMusic(iMs);
+	}
+	
+return TCL_OK;
+}
+
 // args: Level_SoundCmd music <load|play> ?args...?
 int _TclNsCmd_Sound_Music(ClientData cd, Tcl_Interp* interp, int objc, Tcl_Obj* const objv[]) {
 	int retval;
@@ -685,6 +707,13 @@ int _TclNsCmd_Sound_Music(ClientData cd, Tcl_Interp* interp, int objc, Tcl_Obj* 
 	}
 	else if (sArg == "play") {
 	  retval = playLevelMusic(interp, objc, objv);
+	}
+	else if (sArg == "stop") {
+	  Sound_HaltMusic();
+	  retval = TCL_OK;
+	}
+	else if (sArg == "fade") {
+	  retval = fadeOutMusic(interp, objc, objv);
 	}
 	else {
 	  std::string sError = "invalid subcommand \"";

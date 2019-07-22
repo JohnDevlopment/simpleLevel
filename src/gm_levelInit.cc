@@ -1,29 +1,12 @@
-// global game data
-#include "headers/game.hpp"
-
-// header for this file
-#include "headers/gm_levelInit.hpp"
-
-// level data and functions
-#include "headers/levelcode.hpp"
-
-// tile collision code
-#include "headers/tile_collision.hpp"
-
-// sound system
-#include "headers/sound.hpp"
-
-// Tcl system
-#include "headers/tcl.hpp"
-
-// texture packs
-#include "headers/texture_packs.hpp"
-
-// event triggers
-#include "headers/triggers.hpp"
-
-// ability to log output to file
-#include "headers/log.hpp"
+#include "game.hpp"
+#include "gm_levelInit.hpp"
+#include "levelcode.hpp"
+#include "tile_collision.hpp"
+#include "sound.hpp"
+#include "tcl.hpp"
+#include "texture_packs.hpp"
+#include "triggers.hpp"
+#include "log.hpp"
 
 using namespace std;
 
@@ -49,9 +32,6 @@ int gm_levelInit(void* const vgm, const PROGRAM& pgrm) {
 	// load the level file into memory
 	retval = level::load(CurrentLevel, pgrm);
 	if (retval) return retval;
-
-	// create a list of TexturePack's, shared graphics for all sprites; sets bit indicating these were loaded
-	NewTexturePacks(pgrm.renderer);
 
 	// reset the background color
 	SDL_SetRenderDrawColor(pgrm.renderer, 0, 0, 0, 0xff);

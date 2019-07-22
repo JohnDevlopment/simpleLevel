@@ -1,5 +1,6 @@
-#include "headers/game.hpp"
-#include "headers/memory.hpp"
+#include "game.hpp"
+#include "memory.hpp"
+#include "log.hpp"
 
 // special defines
 #define NumberOfSaveBytes	3
@@ -11,12 +12,44 @@ Bitfield<uint16_t>		game::Flags;
 uint8_t				game::FrameCounter = 0;
 uint32_t			game::MiscTimer = 0;
 uint32_t*			game::SaveData = nullptr;
+uint8_t*			game::HeapStack = nullptr;
 
 static SDL_Renderer* _private_renderer = nullptr;
 
 using namespace game;
 
 // public namespace member functions
+SDL_Texture* game::loadTexture(SDL_Renderer* ren, const char* file, const uint32_t* key) {
+	SDL_Texture* tex = nullptr;
+	SDL_Surface* suf;
+	
+	// load image
+	suf = IMG_Load(file);
+	if (suf == nullptr) {
+	  PrintError(game::loadTexture, IMG_GetError());
+	  return nullptr;
+	}
+	
+	// optional colorkey
+	if (key) {
+	  uint32_t uiColor = *key;
+	  uiColor = SDL_MapRGB(suf->format, uiColor >> 16, uiColor >> 8, uiColor);
+	  if ( SDL_SetColorKey(suf, SDL_TRUE, uiColor) < 0 ) {
+	  	PrintError(game::loadTexture, SDL_GetError());
+	  }
+	}
+	
+	// convert into texture
+	tex = SDL_CreateTextureFromSurface(ren, suf);
+	if (tex == nullptr) {
+	  PrintError(game::loadTexture, SDL_GetError());
+	}
+	
+	SDL_FreeSurface(suf);
+	
+return tex;
+}
+
 bool game::loadMedia(SDL_Renderer* ren) {
 	// define the renderer for each Image
 	for (int x = 0; x < NUM_IMAGES; ++x)
@@ -55,6 +88,7 @@ void game::free() {
 	Graphics.clear();
 	delete[] SaveData;
 	Bitmap->free();
+	delete[] HeapStack;
 }
 
 void game::bgcolor(const JColor& color) {

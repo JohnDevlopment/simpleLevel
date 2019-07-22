@@ -174,17 +174,12 @@ bool LevelInfo_TexturePack(unsigned int value, TexurePackArgs& args) {
 	// string filename, rgb colorkeys
 	switch (value) {
 	  default:
-	  	args.filename = "nothing.bmp";
+	  	args.filename = "nothing";
 	  	*rgb = 0;
 	  	break;
 	  
 	  case 0:
-	  	args.filename = "sprites01.png";
-	  	*rgb = 0xff00ff00;
-	  	break;
-	  
-	  case 1:
-	  	args.filename = "platforms.png";
+	  	args.filename = "shadowflytrap.jpg";
 	  	*rgb = 0xffffff00;
 	  	break;
 	}

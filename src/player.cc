@@ -2,61 +2,156 @@
 #include "tile_collision.hpp"
 #include "math.hpp"
 #include "private/player_data_def.h"
+#include "camera.hpp"
 
-int SpriteTileCollisionOneStep(Rect* loc, Rect& collbox, int steps);
-int SpriteTileCollision_LeftRight(Rect* loc, Rect& collbox, int steps);
+int SpriteTileCollisionOneStep(SDL_Rect* loc, SDL_Rect& collbox, int steps);
+int SpriteTileCollision_LeftRight(SDL_Rect* loc, SDL_Rect& collbox, int steps);
 
-float Player::sm_UpSpeeds[2] = {-5.5f, -6.5f};
-uint8_t Player::sm_FrmIdx = 1;
+static const float _upSpeeds[] = {-5.5f, -6.5f};
+static const float sc_HorzSpeeds[] = {2.5f, 3.5f};
 
 Player::Player(SDL_Renderer* ren) : Sprite(255), m_MiscTimer(0), m_InvcTimer(0),
                                     m_DeathTimer(0), m_StunTimer(0), m_FallDistance(0),
-                                    m_ExitDir(0)
+                                    m_ExitDir(0), m_Dir(0)
 {
 	// give a renderer to the object
 	m_obj.renderer = ren;
 }
 
-int Player::Main(void* data) {
+// private:
+void Player::DefaultState(void* data) {
 	using game::FrameCounter;
 	
-	int retval = 0;
-	_PlayerData* playerData = (_PlayerData*) data;
-	uint8_t uiBitmask = *(playerData->KeySymBits);
+	uint16_t uiBits, uiFirst;
+	uint8_t uiIndex = 0;
 	
-	// called from level::update
-	if (playerData->what == 1) {
-	  if (m_StunTimer > 0) --m_StunTimer;
-	  
-	  if (m_InvcTimer > 0) {
-	  	--m_InvcTimer;
-	  }
-	  else if (m_DeathTimer > 0) {
-	  	--m_DeathTimer;
-	  	retval = 1;
-	  }
+	uiBits  = * cast(data, _PlayerData*)->KeySymBits;
+	uiFirst = * cast(data, _PlayerData*)->KeySymBitsFirstFrame;
+	
+	// if the player is stunned
+	if (m_StunTimer > 0)
+	  --m_StunTimer;
+	
+	// player is invincible...
+	if (m_InvcTimer > 0)
+	  --m_InvcTimer;
+	// or if they`re dying
+	else if (m_DeathTimer > 0) {
+	  if (--m_DeathTimer == 0)
+	  	reinterpret_cast<_PlayerData*>(data)->what = 1;
 	}
 	
-	else if (playerData->what == 2) {
-	  // every three frames, change the animation frame when the player is moving left or right
-	  if (uiBitmask & (_key_sym_bitmasks[GMLevel_Key_Left] | _key_sym_bitmasks[GMLevel_Key_Right])) {
-	  	if ( ! (FrameCounter % 3) ) {
-	  	  sm_FrmIdx = (FrameCounter % 2) + 1;
+	// player holding S
+	if (uiBits & 1) {
+	  if (m_MiscTimer < 10)
+	  	++m_MiscTimer;
+	  else
+	  	uiIndex = 1;
+	}
+	// increment timer
+	else if (m_MiscTimer > 0)
+	  --m_MiscTimer;
+	
+	// player holding left
+	if (uiBits & 2) {
+	  m_obj.xspeed = -(sc_HorzSpeeds[uiIndex]);
+	  m_Dir = 0;
+	}
+	// player holding right
+	else if (uiBits & 4) {
+	  m_obj.xspeed = sc_HorzSpeeds[uiIndex];
+	  m_dir = 1;
+	}
+	else {
+	  m_obj.xspeed = 0;
+	}
+	
+	// player pressing up
+	if (uiFirst & 8)
+	  Jump();
+	// player holding down
+	else if (uiBits & 16)
+	  m_state = 1;
+	
+	// update sprite position based on speed
+	m_obj.move();
+}
+
+void Player::DefendState(void* data) {
+	const uint16_t uiBits = * cast(data, _PlayerData*)->KeySymBits;
+	
+	// if the player stops holding down, revert back to state 0
+	if (! (uiBits & 16))
+	  m_state = 0;
+}
+
+void Player::AttackState(void* data) {
+	//
+}
+//////////////////////
+
+void Player::Graphics(void* data) {
+	using game::FrameCounter;
+	
+	const uint16_t uiBits = * cast(data, _PlayerData*)->KeySymBits;
+	const uint8_t uiDirOff = m_Dir ? 6 : 0;
+	uint8_t uiFrameIdx = 0;
+	
+	switch (m_state) {
+	  default: break;
+	  
+	  case 0:
+	  	if (uiBits & 6) {
+	  	  if (! (FrameCounter % 3)) {
+	  	  	// 0/1 if FrameCounter is even/odd, plus 1, plus 6 if facing right
+	  	  	uiFrameIdx = ((FrameCounter & 1) + 1) + uiDirOff;
+	  	  }
 	  	}
-	  	m_obj.frame = sm_FrmIdx;
-	  }
-	  else {
-	  	m_obj.frame = 0;
-	  }
+	  	else {
+	  	  // 0/6 if facing left/right
+	  	  uiFrameIdx = uiDirOff;
+	  	}
+	  	break;
 	  
-	  if (m_InvcTimer) {
-	  	int iFrame = m_obj.frame;
-	  	const int iFrames[] = {iFrame, 3};
-	  	m_obj.frame = iFrames[FrameCounter % 3];
-	  }
+	  case 1:
+	  	uiFrameIdx = uiDirOff + 3;
+	  	break;
 	}
 	
-return retval;
+	// blit graphics as long as the player isn`t blinking
+	if (! m_InvcTimer || ! (m_InvcTimer % 3)) {
+	  m_obj.frame = uiFrameIdx;
+	  m_obj.blit(&CAM_CAMERA);
+	}
+}
+
+int Player::Main(void* data) {
+	uint8_t retval = 0;
+	
+	switch (m_state) {
+	  default: break;
+	  
+	  case 0:
+	  	DefaultState(data);
+	  	break;
+	  
+	  case 1:
+	  	DefendState(data);
+	  	break;
+	  
+	  case 2:
+	  	AttackState(data);
+	  	break;
+	}
+	
+	if ( cast(data, _PlayerData*)->what == 1 ) {
+	  retval = 1;
+	  cast(data, _PlayerData*)->what = 0;
+	}
+	
+	Graphics(data);
+	
+return (int) retval;
 }
 
 int Player::Init() {
@@ -78,17 +173,14 @@ int Player::Init() {
 	}
 	
 	// clip the sprite graphics and blit it at a certain size
-	m_obj.set_clip_size(16, 32);
+	m_obj.set_clip_size(20, 32);
 	m_obj.set_blit_size(32, 64);
 	
 	// set the player's hitbox: original hitbox = 2, 2, 14, 30
 	{
-	  Rect temp = {4, 4, 28, 60};
+	  SDL_Rect temp = {4, 4, 28, 60};
 	  m_obj.set_hitbox(temp);
 	}
-	
-	// enable the player to flip its graphics
-	m_obj.use_flip(SDL_USEFLIPOBJ_YES);
 	
 	// set the player's X delta
 	m_obj.xfactor = CalcDelta(FPS, 7);
@@ -106,18 +198,34 @@ return 0;
 }
 
 void Player::Hurt() {
+	using game::HeapStack;
+
 	if (m_InvcTimer) return; // player's invincible
 	
-	// die with no hp
-	if (--m_hp == 0)
-	  Kill();
-	
-	// lose hp, temporary invincibility
-	else {
-	  m_StunTimer = Ms2Frames(2000); // amount of time to stay still
-	  m_InvcTimer = Ms2Frames(5000); // how long to stay invincible
-	  m_obj.xspeed = 0;              // freeze player
+	switch (m_state) {
+	  default: break;
+	  
+	  case 0:
+	  	// default state
+	  	--m_hp;
+	  	m_StunTimer = Ms2Frames(2000);
+	  	m_InvcTimer = Ms2Frames(5000);
+	  	m_obj.xspeed = 0;
+	  	break;
+	  
+	  case 1:
+	  	{
+	  	  // defend state TODO work on
+	  	  SDL_Rect* intersection = memblk(HeapStack, SDL_Rect, HS_CollRect);
+	  	  SDL_Rect& playerhitbox = m_obj.add_hitbox();
+	  	  bool hitPlayerRight = intersection->x == (playerhitbox.x + playerhitbox.w - 1);
+	  	}
+	  	break;
 	}
+	
+	// die with no hp
+	if (m_hp == 0)
+	  Kill();
 }
 
 void Player::Kill() {
