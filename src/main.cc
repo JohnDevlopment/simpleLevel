@@ -10,6 +10,7 @@
 #include "event.hpp"
 #include "log.hpp"
 #include "windows_or_linux.hpp"
+#include "texture_packs.hpp"
 #include <timer_class.hpp>
 #include <vector>
 #include <algorithm>
@@ -40,7 +41,10 @@ Defines set in makefile: WIDTH, HEIGHT, TILE_WIDTH, TILE_HEIGHT, FPS
 using namespace std;
 
 int main (int argc, char* argv[]) {
+	using game::HeapStack;
+	
 	atexit(quit);
+	HeapStack = new uint8_t[256];
 
 	// initialize Log output
 	Log_Init();
@@ -54,6 +58,10 @@ int main (int argc, char* argv[]) {
 
 	// load global game resources
 	if (! game::loadMedia(program.renderer))
+	  return 1;
+
+	// load texture packs
+	if ( NewTexturePacks(program.renderer) )
 	  return 1;
 
 	// initialize the sound engine

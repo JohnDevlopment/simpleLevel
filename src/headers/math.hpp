@@ -18,7 +18,7 @@
 #include "global_attributes.hpp"
 
 // converts miliseconds to frames
-inline int Ms2Frames(int ms) {
+INLINE int Ms2Frames(int ms) {
 	return FPS * ms / 1000;
 }
 

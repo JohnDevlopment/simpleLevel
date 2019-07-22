@@ -7,6 +7,11 @@
 // new, delete
 #include <new>
 
+// memory functions
+#include <memory>
+
+#define memblk(ptr,type,off)	reinterpret_cast<type*>(ptr + off)
+
 // allocate an array memory
 template<class T>
 int alloc_mem(T*& ptr, const size_t size) {

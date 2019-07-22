@@ -2,16 +2,16 @@
 #define GAME_HPP
 
 // holds one instance of an object on the heap; good for large objects
-#include <custom/generic_class.hpp>
+#include <generic_class.hpp>
 
 // for loading and displaying images in an easier manner
-#include <custom/image_class.hpp>
+#include <image_class.hpp>
 
 // for manipulating bits in an integer
-#include <custom/bitfield_class.hpp>
+#include <bitfield_class.hpp>
 
 // for loading level .dat files
-#include <custom/levelLoad.hpp>
+#include <levelLoad.hpp>
 
 // std::vector -- good for ­really large arrays
 #include <vector>
@@ -20,7 +20,7 @@
 #include "stdinc.h"
 
 // vectors and points
-#include <custom/pointvector>
+#include <pointvector>
 
 // fonts
 #include "tt_fonts.hpp"
@@ -50,6 +50,13 @@
 #define QUITGAME		0x0004
 #define DISABLE_INPUT		0x0002
 #define RES_FILE		0x0001
+
+// game::HeapStack
+enum {
+	HS_KeyBitsFirst = 0,
+	HS_KeyBits = 2,
+	HS_CollRect = 4
+};
 
 // composite flags
 #define FADING			(FADEOUT | FADEIN)
@@ -94,11 +101,15 @@ namespace game {
 	extern uint8_t			 FrameCounter;
 	extern uint32_t			 MiscTimer;
 	extern uint32_t*		 SaveData; // dynamic array: currently holds 3
+	extern uint8_t*			 HeapStack;
 	
 	void unload_backgrounds();
 	
 	// loads image files, fonts, and allocates save data
 	bool loadMedia(SDL_Renderer*);
+	
+	// loads a texture from file with an optional colorkey
+	SDL_Texture* loadTexture(SDL_Renderer* ren, const char* file, const uint32_t* key);
 	
 	// frees the game's resources
 	void free();

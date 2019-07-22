@@ -40,7 +40,7 @@ static Point<int> TilePoint;
 #define Tile024 SlopeJoint
 
 // pointers to said functions
-typedef int (*TileFunction)(Rect* loc, Rect* col, const ENTRY_POINT entry);
+typedef int (*TileFunction)(SDL_Rect* loc, SDL_Rect* col, const ENTRY_POINT entry);
 
 constexpr TileFunction _funcs[NUMBER_OF_CODED_TILES] = {
 	Tile000, Tile001, Tile000, Tile000,
@@ -86,7 +86,7 @@ bool IntersectPointAndTile(const Point<int>& point, int pw, int ph, int x, int y
 return (bool) SDL_IntersectRect( &A, &B, &result );
 }
 
-int SpriteTileCollision_LeftRight(Rect* loc, Rect& collbox, int steps) {
+int SpriteTileCollision_LeftRight(SDL_Rect* loc, SDL_Rect& collbox, int steps) {
 	using level::VTiles;
 	
 	uint8_t uiFlags = 0;
@@ -113,7 +113,7 @@ int SpriteTileCollision_LeftRight(Rect* loc, Rect& collbox, int steps) {
 return static_cast<int>(uiFlags);
 }
 
-int SpriteTileCollisionOneStep(Rect* loc, Rect& collbox, int steps) {
+int SpriteTileCollisionOneStep(SDL_Rect* loc, SDL_Rect& collbox, int steps) {
 	using level::VTiles;
 	
 	#ifndef NDEBUG
@@ -145,6 +145,8 @@ int SpriteTileCollisionOneStep(Rect* loc, Rect& collbox, int steps) {
 	  if ( TILEFLAG_IsSlope(tile) ) {
 	  	const short int* iOffsets = _slope_tables[TILEFLAG_SlopeID(tile)];
 	  	int iDiffX = point.x() % TILE_WIDTH;
+	  	
+	  	uiFlags = 0;
 	  	
 	  	// if the slope is inverted:
 	  	if ( TILEFLAG_IsInvSlope(tile) ) {

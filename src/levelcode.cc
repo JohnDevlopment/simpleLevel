@@ -10,6 +10,7 @@
 #include "log.hpp"
 #include "tile_collision.hpp"
 #include "gm_level.hpp"
+#include "particle_sprite_def.h"
 #include <bad_option>
 #include <lvalue_rvalue_pointers.hpp>
 #include <sstream>
@@ -210,28 +211,15 @@ void level::unload() {
 void updateSpritesAndTilemap(const bool willRenderSprites, void* udata) {
 	SDL_Rect* cam = &CAM_CAMERA;
 	
-	reinterpret_cast<_PlayerData*>(udata)->what = 1;
-	if ( ThePlayer->Main(udata) == 1 ) {
-	  game::Flags.set(FADEOUT | QUITGAME);
-	  camera::Track = false;
-	}
-	
 	// render the back tilemap
 	SDL_RenderCopy(ThePlayer->m_obj.renderer, TILEMAP_BACK, cam, nullptr);
 	
-	// if enabled to render sprites, update the player's position and evaluate every sprite in the level
-	if (willRenderSprites) {
-	  CurrentSprite = ThePlayer;
-	  ThePlayer->m_obj.move();
-	  
-	  // if grounded, the sprite should have no Y speed
-//	  if (ThePlayer->GetColl(M_COLL_DOWN)) {
-//	  	ThePlayer->m_obj.yspeed = 0;
-//	  }
-	}
+	CurrentSprite = ThePlayer;
 	
-	// render the player's graphics
-	ThePlayer->m_obj.blit(cam);
+	if (ThePlayer->Main(udata) == 1) {
+	  game::Flags.set(FADEOUT | QUITGAME);
+	  camera::Track = false;
+	}
 	
 	// render the front tilemap
 	SDL_RenderCopy(ThePlayer->m_obj.renderer, TILEMAP_FRONT, cam, nullptr);

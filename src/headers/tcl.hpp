@@ -4,14 +4,11 @@
 // global game data
 #include "game.hpp"
 
-// Tcl library
 #include <tcl.h>
-
-// function attributes
 #include "global_attributes.hpp"
-
-// program structure
 #include "program.hpp"
+
+#include "tcl/ptr_wraps.h"
 
 //#define Tcl_Str2Obj(str)	Tcl_NewStringObj(str, nullptr)
 

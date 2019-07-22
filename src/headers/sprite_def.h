@@ -86,20 +86,17 @@ public:
 	
 	// methods for derived classes //
 	
-	// height of a subdivision of the sprite
-	virtual int CollTileHeight() = 0;
-	
 	// function for the main sprite code
 	virtual int Main(void*) = 0;
 	
 	// initializes the sprite
 	virtual int Init() = 0;
 	
+	// hurt the sprite
+	virtual void Hurt() = 0;
+	
 	// kills the sprite
 	virtual void Kill() = 0;
-	
-	// causes the sprite to jump
-	virtual void Jump() = 0;
 };
 
 #endif /* SPRITE_DEF_H_INCLUDED */

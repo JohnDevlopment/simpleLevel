@@ -17,6 +17,7 @@ typedef enum {
 	GMLevel_Key_Left,
 	GMLevel_Key_Right,
 	GMLevel_Key_Up,
+	GMLevel_Key_Down,
 	GMLevel_Key_l,
 	GMLevel_Key_Escape,
 	
