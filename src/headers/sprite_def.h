@@ -84,6 +84,9 @@ public:
 	// get the id of the sprite
 	uint8_t GetID() const {return m_id;}
 	
+	// get the hp of the sprite
+	uint8_t GetHP() const {return m_hp;}
+	
 	// methods for derived classes //
 	
 	// function for the main sprite code
@@ -93,10 +96,10 @@ public:
 	virtual int Init() = 0;
 	
 	// hurt the sprite
-	virtual void Hurt() = 0;
+	virtual int Hurt() = 0;
 	
 	// kills the sprite
-	virtual void Kill() = 0;
+	virtual int Kill() = 0;
 };
 
 #endif /* SPRITE_DEF_H_INCLUDED */

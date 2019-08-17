@@ -1,15 +1,6 @@
 #ifndef GM_LEVEL_DEFS_H_INCLUDED
 #define GM_LEVEL_DEFS_H_INCLUDED
 
-// constants of gm_level's IO mode
-typedef enum {
-	GMLevel_Normal,
-	GMLevel_Camera,
-	GMLevel_Cutscene,
-	GMLevel_Dialogue,
-	GMLevel_Input
-} GMLevel_IOMode;
-
 // constants of indices to a list that sets the order of input processing
 typedef enum {
 	// key symbols

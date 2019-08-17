@@ -13,6 +13,8 @@ class Player : public Sprite {
 	
 	void Graphics(void*);
 	
+	void set_state(int);
+	
 	public:
 	
 	uint8_t m_MiscTimer;     // miscellaneous timer
@@ -41,10 +43,10 @@ class Player : public Sprite {
 	virtual int Init();
 	
 	// hurts the player
-	virtual void Hurt();
+	virtual int Hurt();
 	
 	// kills the player and resets their values
-	virtual void Kill();
+	virtual int Kill();
 	
 	// causes the sprite to jump
 	void Jump();
