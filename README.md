@@ -16,5 +16,5 @@ The following files contain code that was taken from SDL_mixer version 2.0.1's s
   * src/sound/sound_wavstream.cc
   * src/headers/sound.hpp
   * src/headers/sound/sound_channel_def.h
-  * src/headers/sound/sound.ogg.h
-  * src/headers/sound/sound.wav.h
+  * src/headers/sound/sound/sound_ogg.h
+  * src/headers/sound/sound/sound_wav.h

@@ -8,13 +8,35 @@ void* DLOpen(const char* file) {
 return pdl;
 }
 
+void* DLOpenLib(const char* file) {
+	void* pdl = dlopen(file, RTLD_NOW|RTLD_LOCAL);
+	
+	if (pdl == nullptr)
+	  cerr << "DLOpenLib error: " << dlerror() << '\n';
+	
+return pdl;
+}
+
+void* DLFunction(void* ptr, const char* sym) {
+	void* pdl = dlsym(ptr, sym);
+	if (pdl == nullptr) {
+	  std::string name = "_";
+	  name += sym;
+	  pdl = dlsym(ptr, name.c_str());
+	  if (pdl == nullptr)
+	  	cerr << "DLFunction error: " << dlerror() << '\n';
+	}
+	
+return pdl;
+}
+
 void DLClose(void* ptr) {
 	if (ptr != nullptr)
 	  dlclose(ptr);
 }
 
 void* DLPtr(void* ptr, const char* sym, size_t* psize) {
-	void* ret = nullptr;
+	void* ret;
 	
 	// attempt to get the symbol named by the argument
 	ret = dlsym(ptr, sym);
