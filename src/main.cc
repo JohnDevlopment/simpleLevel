@@ -41,31 +41,34 @@ Defines set in makefile: WIDTH, HEIGHT, TILE_WIDTH, TILE_HEIGHT, FPS
 using namespace std;
 
 int main (int argc, char* argv[]) {
-	using game::HeapStack;
+	Timer fps;
+	generic_class<SDL_Event> event;
+	int ret = 0;
 	
 	atexit(quit);
-	HeapStack = new uint8_t[256];
 
 	// initialize Log output
 	Log_Init();
 
 	// load Tcl library
-	if (TclCC_Init(&program)) return 1;
+	if (TclCC_Init(&program))
+	  return 1;
 
 	// load SDL library
 	if (loadSDL() < 0)
-	 return 1;
+	  return 1;
 
 	// load global game resources
 	if (! game::loadMedia(program.renderer))
 	  return 1;
 
 	// load texture packs
-	if ( NewTexturePacks(program.renderer) )
+	if (NewTexturePacks(program.renderer))
 	  return 1;
 
 	// initialize the sound engine
-	if (! Sound_Init(22050, AUDIO_S16SYS, 2, 2048)) return 1;
+	if (! Sound_Init(22050, AUDIO_S16SYS, 2, 2048))
+	  return 1;
 
 	// gamemode object
 	GameMode* gm = GM_NewObj();
@@ -77,22 +80,24 @@ int main (int argc, char* argv[]) {
 
 	// set background color black
 	SDL_SetRenderDrawColor(program.renderer, 0, 0, 0, 0xff);
-
+	
+	Log_Cout("Initialization stage complete...now entering main loop\n");
+	
 	// event loop
-	Timer fps;
-	generic_class<SDL_Event> event;
-	int ret = 0;
-
 	while (! (ret & 1)) {
+	  unsigned int ticks;
+	  
 	  // start the timer
 	  fps.start();
 
 	  // parse all events
-	  while (SDL_PollEvent(event.getp()) != 0) {
+	  while (SDL_PollEvent(event.getp())) {
 	  	// user clicks on the 'X' button on the titlebar
 	  	if (event->type == SDL_QUIT) {
 	  	  ret = 1;
-	  	  game::Flags.set(LEVEL_CLEANUP | QUITGAME);
+	  	  
+	  	  // initiate level cleanup and quit the game
+	  	  game::Flags.set(LEVEL_CLEANUP|QUITGAME);
 	  	  break;
 	  	}
 
@@ -109,16 +114,16 @@ int main (int argc, char* argv[]) {
 
 	  // control all gamemodes
 	  GM_Main(gm, program, ret);
-
+	  
 	  // render graphics
 	  SDL_RenderPresent(program.renderer);
-
-	  // how many ticks have passed this frame?
-	  const unsigned int ticks = fps.get();
-
+	  
 	  // increment frame counter
 	  ++game::FrameCounter;
-
+	  
+	  // how many ticks have passed this frame?
+	  ticks = fps.get();
+	  
 	  // wait for the rest of the frame
 	  if (ticks < TICKS) SDL_Delay(TICKS - ticks);
 	}
@@ -150,13 +155,17 @@ return y;
 
 // private functions //
 int loadSDL() {
+	int iReturn;
+	
+	Log_Cout("### Initializing SDL Library ###\n");
+	
 	// initialize SDL
-	int res = SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_TIMER);
-	if (res != 0) {
+	iReturn = SDL_Init(SDL_INIT_VIDEO|SDL_INIT_AUDIO|SDL_INIT_TIMER);
+	if (iReturn) {
 	  cerr << "SDL_Init: " << SDL_GetError() << '\n';
 	  return -1;
 	}
-
+	
 	// create a new window
 	program.window = SDL_CreateWindow("Project Dewpsi Development", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
 		WIDTH, HEIGHT, 0);
@@ -165,7 +174,7 @@ int loadSDL() {
 	  cerr << "SDL_CreateWindow: " << SDL_GetError() << '\n';
 	  return -1;
 	}
-
+	
 	// create a new renderer
 	program.renderer = SDL_CreateRenderer(program.window, -1, 0);
 
@@ -173,25 +182,27 @@ int loadSDL() {
 	  cerr << "SDL_CreateRenderer: " << SDL_GetError() << '\n';
 	  return -1;
 	}
-
+	
 	// sdl2_image
 	{
-	  const int flags = IMG_INIT_PNG|IMG_INIT_JPG;
-	  res = IMG_Init(flags);
-	  if ((res & flags) != flags) {
+	  const int iFlags = IMG_INIT_PNG|IMG_INIT_JPG;
+	  
+	  iReturn = IMG_Init(iFlags);
+	  if ((iReturn & iFlags) != iFlags) {
 	  	cerr << "IMG_Init: " << IMG_GetError() << '\n';
 	  	return -1;
 	  }
 	}
 
-	// 
+	// log to file what the window`s dimensions are
 	{
 	  unique_ptr<int[]> vals(new int[4]);
 	  
 	  SDL_GetWindowPosition(program.window, vals.get(), vals.get() + 1);
 	  SDL_GetWindowSize(program.window, vals.get() + 2, vals.get() + 3);
 	  
-	  Log_Cout("Created window with title: \"%s\". Location: %d, %d. Size: %dx%d\n",
+	  Log_Cout("Started video, audio, and timer subsystems\n");
+	  Log_Cout("Created window with title: \"%s\". Location: %d, %d. Size: %dx%d\n\n",
 	  	SDL_GetWindowTitle(program.window), vals[0], vals[1], vals[2], vals[3]);
 	}
 
@@ -199,35 +210,36 @@ return 0;
 }
 
 void quit() {
-	// clear data
-
-	// delete the player object
-	delete level::ThePlayer;
-
-	// free the gamemode pointer that was created earlier
-	GM_Free();
-
-	// free globally shared data that's used by the program
-	game::free();
-
-
-	// quit game systems
-
 	// shutdown the sound system
 	Sound_Quit();
-
+	
+	// free texture packs
+	FreeTexturePacks();
+	
+	// free globally shared data that's used by the program
+	game::free();
+	
 	// destroy the Tcl interpreter
 	TclCC_Quit();
-
-
-	// quit central systems
-
+	
+	
+	// clear data //
+	
+	// delete the player object
+	delete level::ThePlayer;
+	
+	// free the gamemode pointer that was created earlier
+	GM_Free();
+	
+	
+	// quit central systems //
+	
 	// destroy window and data associated with it
 	destroyProgram(program);
-
+	
 	// quit SDL2_image
 	IMG_Quit();
-
+	
 	// quit SDL2 proper
 	SDL_Quit();
 }

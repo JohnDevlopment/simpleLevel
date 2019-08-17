@@ -1,11 +1,6 @@
-// header file
-#include "headers/gamemode.hpp"
-
-// global game data
-#include "headers/game.hpp"
-
-// math functions
-#include "headers/math.hpp"
+#include "gamemode.hpp"
+#include "game.hpp"
+#include "math.hpp"
 
 // defines operator "new" and its options, like std::nothrow
 #include <new>
@@ -14,10 +9,10 @@
 #include <stdexcept>
 
 // gamemode headers
-#include "headers/gm_splash.hpp"
-#include "headers/gm_menu.hpp"
-#include "headers/gm_level.hpp"
-#include "headers/gm_levelInit.hpp"
+#include "gm_splash.hpp"
+#include "gm_menu.hpp"
+#include "gm_level.hpp"
+#include "gm_levelInit.hpp"
 
 using namespace std;
 
@@ -29,7 +24,8 @@ GameMode* GM_GetPointer() {
 }
 
 void GM_Main(GameMode* const gm, const PROGRAM& program, int& ret) {
-	// list of pointers to gamemode functions
+	using game::Flags;
+	
 	static const GameMode_Function functions[NUMBER_OF_GAMEMODES] = {
 	  gm_splash_screen,
 	  gm_menu,
@@ -43,15 +39,13 @@ void GM_Main(GameMode* const gm, const PROGRAM& program, int& ret) {
 	  gm->gm_cur = gm->gm_next;
 	
 	// fade to black if the most significant bit is set
-	using game::Flags;
-	
 	if (Flags.mask(FADEOUT)) {
 	  if (fade_to_black(5) == 255)
 	  	Flags.unset(FADEOUT);
 	}
 	
 	// fade from black if bit 6 is set
-	if (Flags.mask(FADEIN)) {
+	else if (Flags.mask(FADEIN)) {
 	  if (fade_from_black(5) == 0)
 	  	Flags.unset(FADEIN);
 	}
@@ -70,13 +64,15 @@ void GM_Free() {
 }
 
 GameMode* GM_NewObj() {
+	GameMode* ret_ptr = nullptr;
+	
 	// if the pointer was already allocated, return
-	if (GM_FreeLater != nullptr) {
-	  throw std::runtime_error("GM_NewObj was called more than once...prohibited");
+	if (GM_FreeLater) {
+	  return GM_FreeLater;
 	}
 	
 	// allocate the pointer
-	GameMode* ret_ptr = new (std::nothrow) GameMode;
+	ret_ptr = new (std::nothrow) GameMode;
 	
 	if (ret_ptr == nullptr) {
 	  cerr << "could not allocate memory to GameMode pointer\n";

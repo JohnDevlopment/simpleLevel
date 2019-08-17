@@ -6,13 +6,14 @@
 #define NumberOfSaveBytes	3
 
 // namespace globals
-std::vector<Image>		game::Graphics(NUM_IMAGES);
+Image*				game::Graphics = nullptr;
 generic_class<BitmapFont>	game::Bitmap;
 Bitfield<uint16_t>		game::Flags;
 uint8_t				game::FrameCounter = 0;
 uint32_t			game::MiscTimer = 0;
 uint32_t*			game::SaveData = nullptr;
-uint8_t*			game::HeapStack = nullptr;
+uint32_t			game::KeySymBits = 0;
+uint32_t			game::KeySymBitsFirstFrame = 0;
 
 static SDL_Renderer* _private_renderer = nullptr;
 
@@ -51,9 +52,16 @@ return tex;
 }
 
 bool game::loadMedia(SDL_Renderer* ren) {
-	// define the renderer for each Image
-	for (int x = 0; x < NUM_IMAGES; ++x)
-	  Graphics[x].renderer = ren;
+	Log_Cout("### Loading Global Media ###\n");
+	
+	// allocate array
+	if (Graphics == nullptr) {
+	  Graphics = new Image[NUM_IMAGES];
+	  
+	  // define the renderer for each Image
+	  for (int x = 0; x < NUM_IMAGES; ++x)
+	  	Graphics[x].renderer = ren;
+	}
 	
 	// black rectangle image
 	if (! BG_BLACK.open("images/ui/black.bmp")) {
@@ -76,19 +84,29 @@ bool game::loadMedia(SDL_Renderer* ren) {
 	  return false;
 	
 	// open an image file and build a font off of it
-	if (Bitmap->open(ren, "images/fonts/dialogue/dialogue.png", 0xffffffff))
-	  Bitmap->build("images/fonts/dialogue/dialogue.bin");
+//	if (Bitmap->open(ren, "images/fonts/dialogue/dialogue.png", 0xffffffff))
+//	  Bitmap->build("images/fonts/dialogue/dialogue.bin");
 	
 	_private_renderer = ren;
+	
+	{
+	  SDL_Rect temp = BG_BLACK.get_file_rect();
+	  Log_Cout("Loaded black.bmp: width = %d, height = %d. Texture will blit at %dx%d and have alpha blending\n",
+	  	temp.w, temp.h, WIDTH, HEIGHT);
+	  
+	  temp = BG_DIALOGUEBOX.get_file_rect();
+	  Log_Cout("Loaded dbox.png: width = %d, height = %d\n", temp.w, temp.h);
+	  
+	  Log_Cout("Allocated %d bytes of potential save data\n", (int) NumberOfSaveBytes);
+	}
 	
 return true;
 }
 
 void game::free() {
-	Graphics.clear();
+	delete[] Graphics;
 	delete[] SaveData;
-	Bitmap->free();
-	delete[] HeapStack;
+//	Bitmap->free();
 }
 
 void game::bgcolor(const JColor& color) {

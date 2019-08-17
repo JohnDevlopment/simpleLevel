@@ -1,176 +1,105 @@
-#include "headers/levelinfo.hpp"
+#include "levelinfo.hpp"
+#include "str_const.hpp"
 
 #define NUMBER_VALID_SONGS	3
+#define NUMBER_GLOBAL_SFX	7
 
-static std::string buffer;
-
-constexpr double LoopStart[4] = {
-	0, 6.7, 0, 0
+constexpr str_const _sfx_syms[NUMBER_GLOBAL_SFX] = {
+	"_binary_chgjump_wav_start",
+	"_binary_jump_small_wav_start",
+	"_binary_player_hurt_wav_start",
+	"_binary_startgame_wav_start",
+	"_binary_diaclose_wav_start",
+	"_binary_no_wav_start",
+	"_binary_yes_wav_start"
 };
 
-static Image* Images[] = {&BG_BG1, &BG_BG2};
+constexpr str_const _music_files[NUMBER_VALID_SONGS+1] = {
+	"...",
+	"death.wav",
+	"gogo.ogg",
+	"planning_partA.ogg"
+};
 
-static std::vector<std::string> sMusicFiles;
+constexpr str_const _bg_files[2] = {
+	"clear_sky.png",
+	"grassy_field.png"
+};
 
-Image* LevelInfo_BackgroundLayerID(unsigned int id) {
-	assert(id < 2);
-	return Images[id];
+static const double _loops[3] = {0.0, 0.0, 3.2};
+
+const char* LevelInfo_Background(const unsigned int index) {
+	assert(index < 2);
+	
+return _bg_files[index].get();
 }
 
-const char* LevelInfo_Background(const LevelHeader& header) {
-	buffer.clear();
+std::string LevelInfo_Tileset(const unsigned int index) {
+	std::string buffer;
 	
-	switch (header.background) {
-	  default:
-	  	buffer = "clear_sky.png";
-	  	break;
+	// index: 0-255
+	if (index < 10) {
+	  buffer = "00";
+	}
+	else if (index < 100) {
+	  buffer = "0";
+	}
+	else if (index < 256) {
 	  
-	  case 0:
-	  	buffer = "clear_sky.png";
-	  	break;
-	  
-	  case 1:
-	  	buffer = "grassy_field.png";
-	  	break;
+	}
+	else {
+	  buffer = "000.png";
+	  goto skip;
 	}
 	
-return buffer.c_str();
-}
-
-const char* LevelInfo_Tileset(const unsigned int index) {
-	buffer.clear();
+	buffer += std::to_string(index)
 	
-	switch(index) {
-	  default:
-	  case 0:
-	  	buffer = "000.png";
-	  	break;
-	  
-	  case 1:
-	  	buffer = "001.png";
-	  	break;
-	  
-	  case 2:
-	  	buffer = "002.png";
-	  	break;
-	}
+skip:
 	
-return buffer.c_str();
+return std::move(buffer);
 }
 
 const char* LevelInfo_Music(const unsigned int index) {
+	constexpr unsigned int _valid_count = 4;
 	
-	switch (index) {
-	  default:
-	  	buffer = "beta_level.ogg";
-	  	break;
-	  
-	  case 0:
-	  	buffer="death.wav";
-	  	break;
-	  
-	  case 1:
-	  	buffer = "gogo.ogg";
-	  	break;
-	  
-	  case 2:
-	  	buffer = "planning_partA.ogg";
-	  	break;
-	}
+	static_assert(_valid_count == (NUMBER_VALID_SONGS+1), "_valid_count is not equal to NUMBER_VALID_SONGS + 1");
 	
-return buffer.c_str();
+	assert(index < _valid_count);
+	
+return _music_files[index].get();
 }
 
 int LevelInfo_MusicID(const std::string& str) {
 	using std::string;
 	
-	if ( sMusicFiles.empty() ) {
-	  sMusicFiles.push_back( string("death.wav") );
-	  sMusicFiles.push_back( string("gogo.ogg") );
-	  sMusicFiles.push_back( string("planning_partA.ogg") );
-	}
+	int retval;
 	
-	const char* sFiles[] = {
-	  "death.wav", "gogo.ogg", "planning_partA.ogg"
-	};
-	
-	int ret = -1;
-	
+	// return the musical index number of the 
+	ret = -1;
 	for (int x = 0; x < NUMBER_VALID_SONGS; ++x) {
-	  if (str == sFiles[x]) {
-	  	ret = x;
+	  if (str == _music_files[x].get()) {
+	  	retval = x;
 	  	x = NUMBER_VALID_SONGS;
 	  }
 	}
 	
-return ret;
-}
-
-const char* LevelInfo_Sprite(unsigned int id) {
-	switch(id) {
-	  default:
-	  	buffer = "beta_mario.bmp";
-	  	break;
-	  
-	  case 0:
-	  	buffer = "beta_mario.bmp";
-	  	break;
-	}
-	
-return buffer.c_str();
+return retval;
 }
 
 const char* LevelInfo_Sfx(unsigned int id) {
-	switch (id) {
-	  case 0:
-	  	buffer = "_binary_chgjump_wav_start";
-	  	break;
-	  
-	  case 1:
-	  	buffer = "_binary_jump_small_wav_start";
-	  	break;
-	  
-	  case 2:
-	  	buffer = "_binary_player_hurt_wav_start";
-	  	break;
-	  
-	  case 3:
-	  	buffer = "_binary_startgame_wav_start";
-	  	break;
-	  
-	  case 4:
-	  	buffer = "_binary_diaclose_wav_start";
-	  	break;
-	  
-	  case 5:
-	  	buffer = "_binary_no_wav_start";
-	  	break;
-	  
-	  case 6:
-	  	buffer = "_binary_yes_wav_start";
-	  	break;
-	  
-	  default:
-	  	buffer = "_binary_hello_world_wav_start";
-	  	break;
-	}
+	assert(id < NUMBER_GLOBAL_SFX);
 	
-return buffer.c_str();
-}
-
-inline uint32_t* get32bitPtr(void* const ptr) {
-	return reinterpret_cast<uint32_t*>(ptr);
+return _sfx_syms[id].get();
 }
 
 bool LevelInfo_TexturePack(unsigned int value, TexurePackArgs& args) {
-	if (value >= NUMBER_OF_TEXTURE_PACKS) {
-	  std::cerr << value << " too large; only " << NUMBER_OF_TEXTURE_PACKS \
-	  << " texture packs are supported right now.\n";
-	  return false;
-	}
+	static const char _colorkey[2] = {1, 1};
 	
-	uint32_t* rgb = get32bitPtr(args.rgb);
+	assert(value < NUMBER_OF_TEXTURE_PACKS);
 	
+	// treat a 4-count 8-bit array like it`s a 32-bit integer
+	uint32_t* rgb = reinterpret_cast<uint32_t*>(args.rgb);
+		
 	// string filename, rgb colorkeys
 	switch (value) {
 	  default:
@@ -185,15 +114,13 @@ bool LevelInfo_TexturePack(unsigned int value, TexurePackArgs& args) {
 	}
 	
 	// colorkey true/false flag
-	{
-	  const char colorkey[] = { 1, 1 };
-	  args.colorkey = colorkey[value];
-	}
+	args.colorkey = _colorkey[value];
 	
 return true;
 }
 
 double LevelInfo_MusicLoop(const size_t id) {
-	if (id >= NUMBER_VALID_SONGS) return 3.2;
-	return LoopStart[id];
+	assert(id < 3);
+	
+return _loops[id];
 }

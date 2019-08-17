@@ -9,11 +9,16 @@ using namespace std;
 
 TexturePack** SpriteTXPackList = nullptr;
 
-static void cleanup() {
+void FreeTexturePacks() {
+	// free texture packs
 	for (int x = 0; x < 2; ++x) {
 	  TXPack_Free(SpriteTXPackList[x]);
 	}
+	
+	// delete list of pointers
 	delete[] SpriteTXPackList;
+	
+	// clear bit flag
 	game::Flags.unset(TEXTURE_PACKS);
 }
 
@@ -22,13 +27,17 @@ int NewTexturePacks(SDL_Renderer* renderer) {
 	using game::Flags;
 	
 	uint8_t uipColor[4];
-//	uint8_t* uipColor = nullptr;
 	
-	if ( Flags.mask(TEXTURE_PACKS) ) return 0;
-	std::atexit(cleanup);
+	// return if bit flag is set
+	if (Flags.mask(TEXTURE_PACKS))
+	  return 0;
+	
+	Log_Cout("### Allocating Texture Packs ###\n");
+	
+	// new list
 	SpriteTXPackList = new TexturePack*[2];
 	
-	// load shadowflytrap.jpg
+	// load Shadow Fly Trap shared graphics
 	uipColor[0] = 255;
 	uipColor[1] = 255;
 	uipColor[2] = 255;
@@ -42,10 +51,11 @@ int NewTexturePacks(SDL_Renderer* renderer) {
 	pack = nullptr;
 	SpriteTXPackList[1] = pack;
 	
-	PrintExpr(SpriteTXPackList[0]);
-	PrintExpr(SpriteTXPackList[1]);
-	
+	// set bit flag
 	Flags.set(TEXTURE_PACKS);
+	
+	Log_Cout("Allocated texture packs: 0 = %p, 1 = %p\n",
+	  SpriteTXPackList[0], SpriteTXPackList[1]);
 	
 return 0;
 }

@@ -118,25 +118,28 @@ MusData* CurrentMusic = nullptr;
 	Channel[ch].chunk = nullptr; \
 	Channel[ch].expire = 0; \
 	Channel[ch].start = 0; \
+	Channel[ch].volume = MAX_VOLUME; \
 }
 
 // public functions
 bool Sound_Init(int freq, uint16_t format, int ch, int chunksize) {
 	SDL_AudioSpec desiredspecs;
 	
-	Log_Cout("### Attempting to initialize SOUND system\n");
+	Log_Cout("### Initializing Sound System ###\n");
+	
+	// if device already opened, return
+	if (Flags.mask(SOUND_API_INIT))
+	  return true;
 	
 	// allocate pointer
 	if (CurrentAudioSpecs == nullptr)
 	  CurrentAudioSpecs = new SDL_AudioSpec;
 	
-	// if device already opened, return
-	if ( Flags.mask(SOUND_API_INIT) ) return true;
-	
-	// open audio device
+	// clear structs
 	SDL_zero(desiredspecs);
 	SDL_zerop(CurrentAudioSpecs);
 	
+	// desired audio device options
 	desiredspecs.freq = freq;
 	desiredspecs.format = format;
 	desiredspecs.channels = ch;
@@ -144,11 +147,15 @@ bool Sound_Init(int freq, uint16_t format, int ch, int chunksize) {
 	desiredspecs.callback = audioCallback;
 	desiredspecs.userdata = nullptr;
 	
-	if ( openAudioDevice(desiredspecs) < 0 ) return false;
+	// open audio device
+	if (openAudioDevice(desiredspecs) < 0)
+	  return false;
 	
 	// init music players
-	if ( MusicFmt_Init(*CurrentAudioSpecs) < 0 ) return false;
-	Log_Cout("Initialized Ogg decoder\n");
+	if (MusicFmt_Init(*CurrentAudioSpecs) < 0)
+	  return false;
+	
+	Log_Cout("Initialized Ogg and WAV decoders\n");
 	
 	CurrentMusic = nullptr;
 	Sound_VolumeMusic(MAX_VOLUME);
@@ -156,23 +163,21 @@ bool Sound_Init(int freq, uint16_t format, int ch, int chunksize) {
 	// allocate sound byte channels
 	Channel = new _Sound_Channel[_num_channels];
 	for (int x = 0; x < _num_channels; ++x) {
-	  Channel[x].playing = 0;
-	  Channel[x].looping = 0;
-	  Channel[x].paused  = false;
-	  Channel[x].samples = nullptr;
-	  Channel[x].chunk   = nullptr;
-	  Channel[x].expire  = 0;
-	  Channel[x].start   = 0;
-	  Channel[x].volume  = MAX_VOLUME;
+	  _Sound_ClearChannel(Channel[x]);
+//	  Channel[x].playing = 0;
+//	  Channel[x].looping = 0;
+//	  Channel[x].paused  = false;
+//	  Channel[x].samples = nullptr;
+//	  Channel[x].chunk   = nullptr;
+//	  Channel[x].expire  = 0;
+//	  Channel[x].start   = 0;
+//	  Channel[x].volume  = MAX_VOLUME;
 	}
-	Log_Cout("Allocated %d channels for mixing\n", _num_channels);
 	
 	// set milliseconds per callback (step)
 	MsPerStep = static_cast<int>( (float) CurrentAudioSpecs->samples * 1000.0f / CurrentAudioSpecs->freq );
 	
-	#ifndef NDEBUG
-	Log_Cout("Milliseconds per callback: %d\n", MsPerStep);
-	#endif
+	Log_Cout("Allocated %d channels for mixing; milliseconds per \"step\" = %d\n", _num_channels, MsPerStep);
 	
 	// open library file
 	Handle = DLOpen("audio/sound_effects/sfx.so");
@@ -180,16 +185,21 @@ bool Sound_Init(int freq, uint16_t format, int ch, int chunksize) {
 	  Sound_SetError(Sound_Init, "failed to open sfx.so");
 	  return false;
 	}
-	Log_Cout("Opened audio/sound_effects/sfx.so for reading\n");
+	Log_Cout("Opened audio/sound_effects/sfx.so...reading symbols\n");
 	
 	// load sound effects from library
-	if ( loadGlobalSFX() < 0 ) return false;
+	if (loadGlobalSFX() < 0)
+	  return false;
+	
 	Log_Cout("Loaded %d sound effects to the global array\n", NUMBER_OF_GLOBAL_SFX);
 	
 	// set global flag
 	Flags.set(SOUND_API_INIT);
+	
+	// pause audio
 	SDL_PauseAudioDevice(AudioID, 0);
-	Log_Cout("Initialized SOUND system and set the appropriate flag\n");
+	
+	Log_Cout("Initialized Sound system and set the appropriate flag\n\n");
 	
 return true;
 }

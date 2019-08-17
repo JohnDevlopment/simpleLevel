@@ -93,7 +93,7 @@ enum {
 */
 namespace game {
 	// complex object types
-	extern std::vector<Image>	 Graphics;
+	extern Image*			 Graphics;
 	extern generic_class<BitmapFont> Bitmap;
 	extern Bitfield<uint16_t>	 Flags;
 	
@@ -101,7 +101,8 @@ namespace game {
 	extern uint8_t			 FrameCounter;
 	extern uint32_t			 MiscTimer;
 	extern uint32_t*		 SaveData; // dynamic array: currently holds 3
-	extern uint8_t*			 HeapStack;
+	extern uint32_t			 KeySymBits;
+	extern uint32_t			 KeySymBitsFirstFrame;
 	
 	void unload_backgrounds();
 	

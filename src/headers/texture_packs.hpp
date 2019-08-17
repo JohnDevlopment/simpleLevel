@@ -33,4 +33,7 @@ extern TexturePack** SpriteTXPackList;
 // create a list of texture packs for each type of sprite
 int NewTexturePacks(SDL_Renderer* renderer);
 
+// free the texture packs
+void FreeTexturePacks();
+
 #endif /* TEXTURE_PACKS_HPP_INCLUDED */

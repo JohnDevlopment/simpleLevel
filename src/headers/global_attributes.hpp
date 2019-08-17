@@ -60,11 +60,12 @@
   #warning "Attribute destructor not supported by this compiler."
 #endif
 
-//#ifdef __GNUG__
-//#  define DTOR __attribute__ ((destructor))
-//#else
-//#  warning "GNU attribute 'destructor' not defined"
-//#endif
+/* Functions */
+#ifdef __GNUG__
+  #define PRINTF_FORMAT(stridx, argsidx) __attribute__ ((format (printf, stridx, argsidx)))
+#else
+  #define PRINTF_FORMAT(stridx, argsidx)
+#endif
 
 /**/
 #ifdef __GNUG__

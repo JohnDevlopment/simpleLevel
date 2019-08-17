@@ -79,9 +79,6 @@ namespace level {
 	// level header: width, height, background ID, tileset ID, & music ID
 	extern generic_class<LevelHeader> Header;
 	
-	// every tile in the level is defined in this array
-	extern std::vector<Tile> VTiles;
-	
 	// four pointers to SDL_Texure: they all represent different layers of the tilemap and their respective backups
 	// 0 = back tilemap, 1 = front tilemap, 2 = backup of (0), 3 = backup of (1)
 	extern SDL_Texture* Tilemap[];
@@ -90,29 +87,30 @@ namespace level {
 	extern Player* ThePlayer;
 	
 	// the current absolute position of the background within the level
-	extern int bgx;
+	extern int BGX;
 	
-	// screen exits
-	extern std::vector<std::vector<char>> screenExits;
+	// tile array
+	extern Tile* Tiles;
 	
-	// TODO add description
-	extern uint8_t levelEvents;
+	// the current level
+	extern char* CurrentLevel;
 	
-	// TODO add description
-	void correctBackground(const SDL_Rect* srcCam, const SDL_Rect* dstCam);
+	// fixes the
+//	void correctBackground(const SDL_Rect* srcCam, const SDL_Rect* dstCam);
 	
-	/* Loads a .dat file indicatd by the first argument and returns zero if
-	   it successfully builds a level based off what the file says. If it returns
-	   zero, the function has successfully read the file and allocated memory
-	   for two textures located in the 'level' namespace. Moreover, a vector
-	   container is filled with the tilemap data read from the file.
+	/* level::load
+	   Loads a .dat file indicated by the first argument and builds two tilemaps
+	   over it as well as a background image.
+	   
+	   @return     zero if it worked, -1 if it didn`t
 	*/
 	int load(std::string file, const PROGRAM& program);
 
-
+	// update the level sprites and graphics
 	void update(GameMode* gm, void* udata, char entry);
+	
+	// free all memory associated with the level
 	void unload();
-	void exit(int x, int y);
 }
 
 #endif /* LEVELCODE_HPP */

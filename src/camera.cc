@@ -22,9 +22,8 @@ enum CAMERA_SCROLL_DEF {
 	CAMERA_SCROLL_SLOW_DOWN
 };
 
-std::vector<SDL_Rect> camera::CameraLevel;
+StaticDArray<SDL_Rect, 4> camera::CamRects;
 bool camera::Track = false;
-StaticDArray<Background_Base*,2> camera::BGLayers;
 float camera::CamXSpd = 0; // current x speed of the camera
 float camera::CamYSpd = 0; // current y speed of the camera
 short int camera::BGMinX = 0;
@@ -74,29 +73,25 @@ void camera::correctCamera() {
 
 void camera::defineLevel(const int width, const int height) {
 	// enable camera tracking if the level is bigger than the screen
-	if (width > WIDTH/2 || height > HEIGHT/2)
+	if (width > (WIDTH / 2) || height > (HEIGHT / 2))
 	  Track = true;
 	else
 	  Track = false;
 	
-	// set the camera and level rects
-	CameraLevel.push_back( SDL_Rect() );
-	CAM_CAMERA.x = 0;
-	CAM_CAMERA.y = 0;
-	CAM_CAMERA.w = WIDTH;
-	CAM_CAMERA.h = HEIGHT;
+	// camera 1
+	auto itr = CamRects.begin();
+	itr->w = WIDTH;
+	itr->h = HEIGHT;
 	
-	CameraLevel.push_back( SDL_Rect() );
-	CAM_SCALED.x = 0;
-	CAM_SCALED.y = 0;
-	CAM_SCALED.w = CAM_CAMERA.w * 2; 
-	CAM_SCALED.h = CAM_CAMERA.h * 2;
+	// camera scaled
+	++itr;
+	itr->w = WIDTH * 2;
+	itr->h = HEIGHT * 2;
 	
-	CameraLevel.push_back( SDL_Rect() );
-	CAM_LEVEL.x = 0;
-	CAM_LEVEL.y = 0;
-	CAM_LEVEL.w = width;
-	CAM_LEVEL.h = height;
+	// level dimentions
+	++itr;
+	itr->w = width;
+	itr->h = height;
 	
 	// minimum background offsets
 	BGMinX = 0;
@@ -104,43 +99,50 @@ void camera::defineLevel(const int width, const int height) {
 }
 
 void camera::track() {
-	// camera rectangle
-	SDL_Rect& cam = CAM_CAMERA;
-	
+	int iSprEdge;
+
 	// don't track the camera if disabled or player is at the beginning of the level
 	if (! Track) return;
 	
-	// track player's Y position and affect the camera accordingly
-	if (ThePlayer->m_obj.get_y() >= 128) {
-	  int sprite_center = ThePlayer->m_obj.get_y() + 32;
-	  
-	  // if player is above the 1/3 line of the camera
-	  if (sprite_center < cam.y + 160)
-	  	CamYSpd = LinearInterp(CamYSpd, -5, cam_delta2);
-	  
-	  // below the 2/3 line
-	  else if (sprite_center > cam.y + 320)
-	  	CamYSpd = LinearInterp(CamYSpd, 10, cam_delta2);
-	  
-	  // deaccelerate camera
-	  else
-	  	CamYSpd = CamYSpd > 0.2f ? CamYSpd * 0.3f : 0;
-	  
-	  if (CamYSpd) scrolly(CamYSpd);
-	}
+	const SDL_Rect& spriteLoc = ThePlayer->m_obj.get_dest_rect();
+	SDL_Rect& cam = CAM_CAMERA;
 	
 	// right edge of the player
-	int sprite_right_edge = ThePlayer->m_obj.get_x() + 32;
+	iSprEdge = spriteLoc.x + spriteLoc.w;
 	
-	// if camera is not moving or it is set to "slow down" mode, AND if the sprite is past a point
-	if ( /*(*/ ! _Camera || _Camera == CAMERA_SCROLL_SLOW_DOWN /*) && sprite_right_edge >= 320*/ ) {
-	  // scroll right if the player goes past the 427'th pixel in the camera region
-	  if (sprite_right_edge > (cam.x + 427))
-	  	_Camera = CAMERA_SCROLL_RIGHT;
+	// check the player`s y position
+	if (spriteLoc.y >= 128) {
+	  int iSpriteCenter = spriteLoc.y + 10;
 	  
-	  // scroll left if the player goes before the 213'th pixel in the camera region
-	  else if (ThePlayer->m_obj.get_x() < (cam.x + 213))
+	  // the player is above the 1/3 line of the camera
+	  if (iSpriteCenter < (cam.y + 160)) {
+	  	CamYSpd = LinearInterp(CamYSpd, -5, cam_delta2);
+	  }
+	  
+	  // below the 2/3 line
+	  else if (iSpriteCenter > (cam.y + 320)) {
+	  	CamYSpd = LinearInterp(CamYSpd, 10, cam_delta2);
+	  }
+	  
+	  // slow the camera down if it`s still moving but shouldn`t
+	  if (CamYSpd) {
+	  	if (CamYSpd > 0.2f)
+	  		CamYSpd = CamYSpd * 0.3f;
+	  	else
+	  		CamYSpd = 0;
+	  	
+	  	scrolly(CamYSpd);
+	  }
+	}
+	
+	// camera can change direction when slowing down or stopped
+	if (! _Camera || _Camera == CAMERA_SCROLL_SLOW_DOWN) {
+	  if (iSprEdge > (cam.x + 427)) {
+	  	_Camera = CAMERA_SCROLL_RIGHT;
+	  }
+	  else if (spriteLoc.x < (cam.x + 213)) {
 	  	_Camera = CAMERA_SCROLL_LEFT;
+	  }
 	}
 	
 	// act according to the camera scroll value
@@ -149,7 +151,7 @@ void camera::track() {
 	  
 	  // scrolls rightward at normal speed
 	  case CAMERA_SCROLL_RIGHT: {
-	  	// increase the current speed of the camera by a delta
+	  	// increase the current speed of the camera by *cam_delta*
 	  	CamXSpd = LinearInterp(CamXSpd, cam_spdx, cam_delta);
 	  	
 	  	// if the speed exceeds the cap, decrease it by a certain percentage
@@ -157,11 +159,11 @@ void camera::track() {
 	  	  CamXSpd *= cam_deacc;
 	  	
 	  	// if the player goes left of the 427th pixel in the camera, slow the camera down
-	  	if ( sprite_right_edge < (cam.x + 427) )
+	  	if (iSprEdge < (cam.x + 427))
 	  	  _Camera = CAMERA_SCROLL_SLOW_DOWN;
 	  	
 	  	// if the player goes right of the camera's 491st pixel, scroll the camera faster
-	  	if ( sprite_right_edge > (cam.x + 491) )
+	  	if (iSprEdge > (cam.x + 491))
 	  	  _Camera = CAMERA_SCROLL_FASTER_RIGHT;
 	  	
 	  	// scroll the camera and background according to its current speed
@@ -175,7 +177,7 @@ void camera::track() {
 	  	CamXSpd = LinearInterp(CamXSpd, cam_spdx2, cam_delta);
 	  	
 	  	// the player goes behing the 417th pixel in the camera region, revert back to normal speed
-	  	if ( sprite_right_edge < (cam.x + 417) )
+	  	if (iSprEdge < (cam.x + 417))
 	  	  _Camera = CAMERA_SCROLL_RIGHT;
 	  	
 	  	// scroll the camera and background according to its current speed
@@ -312,59 +314,5 @@ void camera::scrollx(float speed) {
 }
 
 void camera::bgscroll(bool bypass) {
-	/* If the camera is enabled, or if the bypass flag is active,
-	   do the following. */
-	if (_Camera != CAMERA_NO_SCROLL || bypass) {
-	  Background_Base* ptr = nullptr;
-	  int x = 0;
-	  while (x < 2) {
-	  	ptr = BGLayers[x++]; // increment x AFTER getting the pointer
-	  	
-	  	// if the pointer is not NULL
-	  	if (ptr)
-	  	  ptr->move();
-	  }
-	}
-}
-
-// class Background_X
-void Background_X::move() {
-	float fXspeed = *m_pfSpeedX * m_fFactorX;
-	float temp;
-	
-	// add float x speed to float x offset, then separate integer and fraction parts
-	m_fX += fXspeed;
-	m_fX = std::modf(m_fX, &temp);
-	m_iX += (int) temp; // this holds the integer part
-}
-
-void Background_X::check(const SDL_Rect* rect) {
-	// if the camera is left of the background, pull the background left
-	if (rect->x < m_iX)
-	  m_iX -= WIDTH;
-	
-	// if background is to the left
-	if (m_iX < BGMinX)
-	  m_iX = BGMinX;
-}
-
-// class Background_Y
-void Background_Y::move() {
-	float fYspeed = *m_pfSpeedY * m_fFactorY;
-	float temp;
-	
-	// add float y speed to float y offset, then separate integer and fraction parts
-	m_fY += fYspeed;
-	m_fY = std::modf(m_fY, &temp);
-	m_iY += temp;
-}
-
-void Background_Y::check(const SDL_Rect* rect) {
-	// 
-	if (rect->y < BGMinY)
-	  m_iY = BGMinY;
-	
-	// above the level itself on top of the rect
-	else if (m_iY < BGMinY && rect->y > m_iY)
-	  m_iY = BGMinY;
+	//
 }

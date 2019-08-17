@@ -12,6 +12,11 @@
 #include "headers/game.hpp"
 
 int Event_Main(SDL_Event& event, GameMode* const gamemode, const short int flag) {
+	using game::Flags;
+	
+	uint8_t index = 0;
+	int retval = 0;
+	
 	/* Pointer to a function that returns int and accepts an l-value reference
 	   to SDL_Event and a pointer to GameMode. */ 
 //	typedef int (* FPI_EventFunc)(SDL_Event&, GameMode* const);
@@ -59,8 +64,8 @@ int Event_Main(SDL_Event& event, GameMode* const gamemode, const short int flag)
 	};
 	
 	// if this flag is set, ALL input is ignored
-	using game::Flags;
-	if ( Flags.mask(DISABLE_INPUT) ) return 0;
+	if (Flags.mask(DISABLE_INPUT))
+	  return 0;
 	
 	/* If the integer argument is non-zero, the gamemode's corresponding keyboard function is called
 	   with an argument that explicitly calls for the use of keyboard states; all this provided
@@ -68,9 +73,6 @@ int Event_Main(SDL_Event& event, GameMode* const gamemode, const short int flag)
 	if (flag && keyboard_func[gamemode->gm_cur] != nullptr) {
 	  return keyboard_func[gamemode->gm_cur](event, gamemode, EVENT_USE_KEYSTATES);
 	}
-	
-	uint8_t index = 0;
-	int retval = 0;
 	
 	// branch to different event functions
 	switch (event.type) {

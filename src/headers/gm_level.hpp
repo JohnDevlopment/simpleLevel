@@ -22,8 +22,12 @@
    UPDATE It would seem that I fixed the problem simply by capping the maximum positive Y speed at 8. The old value was
    10, which is more than the overlap distance of my sprite, which is 8. Could there be a connection?
 */
-int gm_level(void* const gamemode_void, const PROGRAM& program);
 
+/* gm_level: 
+   
+   gm_level_keyboard:
+*/
+int gm_level(void* const gamemode_void, const PROGRAM& program);
 int gm_level_keyboard(SDL_Event& event, GameMode* const gm, uint8_t entry_point);
 
 #endif /* GM_LEVEL_HPP */

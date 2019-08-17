@@ -6,20 +6,13 @@
 
 using namespace std;
 
-using game::Bitmap;
-
-// private function decalarations
-static uint32_t timerCallback_playMenuMusic(uint32_t, void*);
-static int _gm_menu_init(GameMode* const gm, const PROGRAM& program);
-static int _gm_menu_blit(GameMode* const gm, const PROGRAM& program);
-static int _gm_menu_cleanup(GameMode* const gm, const PROGRAM& program);
-
 // mouse input function
 int gm_menu_event_mousebutton(SDL_Event& event, GameMode* const gm, uint8_t mask) {
 	using game::Flags;
 	
 	// no mouse input when fading screen
-	if (Flags.mask(FADING)) return 0;
+	if (Flags.mask(FADING))
+	  return 0;
 	
 	// if the left mouse button was clicked
 	if (sdl_buttonstate(event) == EVENT_PRESSED && sdl_left(event)) {
@@ -43,9 +36,23 @@ int gm_menu_event_mousebutton(SDL_Event& event, GameMode* const gm, uint8_t mask
 return 0;
 }
 
+// timer callback
+static uint32_t timerCallback_playMenuMusic(uint32_t interval, void* data) {
+	// player the music for one iteration
+	MusData* mus = (MusData*) data;
+	if (mus) {
+	  Sound_PlayMusic(mus, 1);
+	}
+	
+return 0;
+}
+
 // start of gamemode
-int _gm_menu_init(GameMode* const gm, const PROGRAM& program) {
+static int _gm_menu_init(GameMode* const gm, const PROGRAM& program) {
 	using namespace game;
+	
+	MusData* mus;
+	SDL_TimerID timer = 0;
 	
 	// open background image; print error message in background if it fails
 	BG_BG1.open("images/backgrounds/grassy_field.png");
@@ -70,14 +77,14 @@ int _gm_menu_init(GameMode* const gm, const PROGRAM& program) {
 	}
 	
 	// load music
-	MusData* mus = Sound_LoadMUSType("audio/music/menu.ogg", MUS_TYPE_OGG);
+	mus = Sound_LoadMUSType("audio/music/menu.ogg", MUS_TYPE_OGG);
 	if (mus) {
 	  GM_SetData(gm, mus);
 	  MusData_SetVolume(mus, 45);
 	}
 	
 	// play the music after a 800 miliseconds
-	SDL_TimerID timer = SDL_AddTimer(800, timerCallback_playMenuMusic, mus);
+	timer = SDL_AddTimer(800, timerCallback_playMenuMusic, mus);
 	
 	if (! timer)
 	  std::cerr << "Failed to initialize timer: " << SDL_GetError() << '\n';
@@ -89,7 +96,7 @@ return 2;
 }
 
 // run every frame after init
-int _gm_menu_blit(GameMode* const gm, const PROGRAM& program) {
+static int _gm_menu_blit(GameMode* const gm, const PROGRAM& program) {
 	using game::Flags;
 	
 	// background, button
@@ -103,13 +110,13 @@ return 0;
 }
 
 // cleanup function
-int _gm_menu_cleanup(GameMode* const gm, const PROGRAM& program) {
+static int _gm_menu_cleanup(GameMode* const gm, const PROGRAM& program) {
 	// unload the background and button images
 	BG_BG1.unload();
 	BG_BG2.unload();
 	
 	// free music
-	Sound_FreeMUS( reinterpret_cast<MusData*>(gm->data) );
+	Sound_FreeMUS(reinterpret_cast<MusData*>(gm->data));
 	GM_ClearData(gm);
 	
 return 0;
@@ -119,25 +126,14 @@ return 0;
 int gm_menu(void* const gamemode_void, const PROGRAM& program) {
 	typedef int (*FPI_GameModeSubFunction)(GameMode* const, const PROGRAM&);
 	
+	GameMode* gm = (GameMode*) gamemode_void;
+	short int iIndex = (gm->tm < 3) ? gm->tm : 0;
+	
 	static const FPI_GameModeSubFunction functions[3] = {
 	  _gm_menu_blit,
 	  _gm_menu_init,
 	  _gm_menu_cleanup
 	};
 	
-	GameMode* gm = (GameMode*) gamemode_void;
-	short int index = (gm->tm < 3) ? gm->tm : 0;
-	
-return functions[index](gm, program);
-}
-
-// timer callback
-uint32_t timerCallback_playMenuMusic(uint32_t interval, void* data) {
-	// player the music for one iteration
-	MusData* mus = (MusData*) data;
-	if (mus) {
-	  Sound_PlayMusic(mus, 1);
-	}
-	
-return 0;
+return functions[iIndex](gm, program);
 }
