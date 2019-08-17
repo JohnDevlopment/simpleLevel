@@ -13,6 +13,7 @@ levelinfo.o
 locks.o
 log.o
 math.o
+particle_sprite.o
 player.o
 res.o
 sound.o
