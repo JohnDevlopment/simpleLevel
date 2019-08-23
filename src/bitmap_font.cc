@@ -1,34 +1,14 @@
-// global game data
-#include "headers/game.hpp"
+#include "game.hpp"
+#include "sdl_incs.h"
+#include "bitmap_font.hpp"
+#include "tt_fonts.hpp"
+#include "log.hpp"
 
-// SDL2 headers
-#include "headers/sdl_incs.h"
-
-// std::move() and more
 #include <utility>
-
-// turn references to pointers and vice versa
-#include <custom/lvalue_rvalue_pointers.hpp>
-
-// bitmap fonts
-#include "headers/bitmap_font.hpp"
-
-// truetype fonts
-#include "headers/tt_fonts.hpp"
-
-// logging output
-#include "headers/log.hpp"
-
-// std::array
+#include <lvalue_rvalue_pointers.hpp>
 #include <array>
-
-// exception bad_option
-#include <custom/bad_option>
-
-// write to files
+#include <bad_option>
 #include <fstream>
-
-// standard math functions
 #include <cmath>
 
 using namespace std;

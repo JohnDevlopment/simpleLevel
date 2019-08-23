@@ -45,11 +45,11 @@
 #define TILEFLAG_ToSlopeID(i)      (i << TFBITS_SlopeID)
 
 // macros to isolate each tile flag
-#define TILEFLAG_GetLayer(tile)    (tile.flags & TILEFLAG_LAYER)                           // layer number of tile, 0 or 1
-#define TILEFLAG_IsSlope(tile)     ((tile.flags & TILEFLAG_SLOPE) >> TFBITS_Slope)         // 1 if the tile is a slope, 0 otherwise
-#define TILEFLAG_IsSolid(tile)     ((tile.flags & TILEFLAG_SOLID) >> TFBITS_IsSolid)       // 1 if the slope is a solid, 0 otherwise
-#define TILEFLAG_IsInvSlope(tile)  ((tile.flags & TILEFLAG_SLOPEINV) >> TFBITS_IsInvSlope) // 1 if the slope if facing right, 0 otherwise
-#define TILEFLAG_SlopeID(tile)     ((tile.flags & TILEFLAG_SLOPEID) >> TFBITS_SlopeID)     // slope table lookup number
+#define TILEFLAG_GetLayer(tile)    ((tile).flags & TILEFLAG_LAYER)                           // layer number of tile, 0 or 1
+#define TILEFLAG_IsSlope(tile)     (((tile).flags & TILEFLAG_SLOPE) >> TFBITS_Slope)         // 1 if the tile is a slope, 0 otherwise
+#define TILEFLAG_IsSolid(tile)     (((tile).flags & TILEFLAG_SOLID) >> TFBITS_IsSolid)       // 1 if the slope is a solid, 0 otherwise
+#define TILEFLAG_IsInvSlope(tile)  (((tile).flags & TILEFLAG_SLOPEINV) >> TFBITS_IsInvSlope) // 1 if the slope if facing right, 0 otherwise
+#define TILEFLAG_SlopeID(tile)     (((tile).flags & TILEFLAG_SLOPEID) >> TFBITS_SlopeID)     // slope table lookup number
 
 // misc defines
 #define MAX_FALL_DISTANCE          28              // maxium number of pixels the player can fall down before taking damage

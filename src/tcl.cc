@@ -66,7 +66,7 @@ int TclCC_Init(PROGRAM* const program) {
 	}
 	
 	// link CurrentLevel to Tcl variable
-	if (Tcl_LinkVar(gInterp, "CurrentLevel", &CurrentLevel, TCL_LINK_STRING) == TCL_ERROR) {
+	if (Tcl_LinkVar(gInterp, "CurrentLevel", (char*) &CurrentLevel, TCL_LINK_STRING) == TCL_ERROR) {
 	  cerr << "Failed to link CurrentLevel\n";
 	  return TCL_ERROR;
 	}

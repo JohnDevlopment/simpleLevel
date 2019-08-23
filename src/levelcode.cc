@@ -1,12 +1,26 @@
-// standard headers
+/* * File = levelcode.cc
+   * Project = simpleLevel
+   * File type = source
+   * Description: This source file is part of the project simpleLevel. It contains
+   * definitions for the functions listed in the associated header.
+   * For navigation purposes, here are some search keywords:
+   *   - code INTFUNC_DECL for private function declarations
+   *   - code INTFUNC_IMPL for private function implementations
+   *   - code EXTFUNC_IMPL for external function implementations
+   *   - code ENSVARS for external namespace variables being defined
+   * 
+*/
+
+// system headers
 #include <bad_option>
-#include <lvalue_rvalue_pointers.hpp>
 #include <sstream>
+
+// custom hears
 #include <arrays.hpp>
+#include <lvalue_rvalue_pointers.hpp>
 
 #include "log.hpp"
 #include "game.hpp"
-
 #include "levelcode.hpp"
 #include "levelinfo.hpp"
 #include "sound.hpp"
@@ -20,9 +34,8 @@
 #define NO_KEY_SYM_BITMASKS 1
 #include "private/player_data_def.h"
 
-// private variables
-
-// private function prototypes
+// private function prototypes | code: INTFUNC_DECL
+static void makeTileLocList(const int);
 static bool loadBackground();
 static bool loadTileset(SDL_Surface**);
 static bool createTilemaps(SDL_Surface**);
@@ -34,10 +47,11 @@ static SDL_Rect getXY(const int, uint16_t);
 static void placeTile(const Tile&, SDL_Surface*, uint16_t, SDL_Surface**);
 static int flagsBasedOnCodeID(const Tile&);
 
+// import namespaces
 using namespace std;
 using namespace level;
 
-// initialize namespace members //
+// initialize namespace members | code: ENSVARS
 generic_class<LevelHeader> level::Header;
 SDL_Texture* level::Tilemap[4];
 Player* level::ThePlayer;
@@ -46,7 +60,7 @@ Tile* level::Tiles = nullptr;
 char* level::CurrentLevel = nullptr;
 Point<int>* level::TileLocations = nullptr;
 
-// public member functions
+// public member functions | code: EXTFUNC_IMPL
 //void level::correctBackground(const SDL_Rect* srcCam, const SDL_Rect* dstCam) {
 //	static int iDiff = 0;
 //	
@@ -114,7 +128,8 @@ int level::load(string file, const PROGRAM& program) {
 	// define the level boundaries
 	camera::defineLevel(Header->width * TILE_WIDTH, Header->height * TILE_HEIGHT);
 	
-	// 
+	// create list of coordinates for each tile
+	makeTileLocList(Header->width * Header->height);
 	
 return 0;
 }
@@ -147,11 +162,17 @@ void level::update(GameMode* gm, void* udata, char entry) {
 }
 
 void level::unload() {
-	// fill header with zeroes
+	using game::Flags;
+	
+	// clear data
 	std::memset(Header.getp(), 0, sizeof(LevelHeader));
 	
-	// free array of tiles
+	// free array of tiles and its coordinate array
 	delete[] Tiles;
+	Tiles = nullptr;
+	
+	delete[] TileLocations;
+	TileLocations = nullptr;
 	
 	// unload tilemaps
 	Free(&TILEMAP_BACK, &TILEMAP_FRONT);
@@ -159,22 +180,22 @@ void level::unload() {
 	// reset background position
 	BGX = 0;
 	
-	// backgrounds
-	BG_BG2.unload();
-	BG_BG1.unload();
+	// unload background images
+	if (! Flags.mask(DONT_UNLOAD_BGS)) {
+	  BG_BG2.unload();
+	  BG_BG1.unload();
+	}
+	else
+	  Flags.unset(DONT_UNLOAD_BGS);
 }
 
-
-
-
-
-// private helper functions
+// private helper functions | code: INTFUNC_IMPL
 void makeTileLocList(const int ntiles) {
 	Point<int> tilexy;
 	
 	TileLocations = new Point<int>[ntiles];
 	for (int x = 0; x < ntiles; ++x) {
-	  tilexy = getXY(x, Header->width);
+	  tilexy = GetXY(x, Header->width); // tile_collision.o
 	  TileLocations[x] = tilexy;
 	}
 }

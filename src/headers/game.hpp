@@ -1,45 +1,28 @@
 #ifndef GAME_HPP
 #define GAME_HPP
 
-// holds one instance of an object on the heap; good for large objects
+// standard headers
 #include <generic_class.hpp>
-
-// for loading and displaying images in an easier manner
-#include <image_class.hpp>
-
-// for manipulating bits in an integer
 #include <bitfield_class.hpp>
-
-// for loading level .dat files
-#include <levelLoad.hpp>
-
-// std::vector -- good for ­really large arrays
 #include <vector>
 
-// standard headers
 #include "stdinc.h"
-
-// vectors and points
-#include <pointvector>
-
-// fonts
-#include "tt_fonts.hpp"
-
-// affects how functions are compiled
+#include "sdl_incs.h"
 #include "global_attributes.hpp"
-
-// program window and renderer
 #include "program.hpp"
 
-// color struct
-#include "color.h"
+// game/library headers
+#include <levelLoad.hpp>
+#include <pointvector>
+#include <image_class.hpp>
 
-// SDL files
-#include "sdl_incs.h"
+#include "tt_fonts.hpp"
+#include "color.h"
 
 #define STRLEN(i)		std::strlen(#i)
 
 // individual flags
+#define DONT_UNLOAD_BGS		0x0400
 #define TEXTURE_PACKS		0x0200
 #define LEVEL_CLEANUP		0x0100
 #define FADEOUT			0x0080
