@@ -110,15 +110,15 @@ static void* Handle = nullptr;
 
 MusData* CurrentMusic = nullptr;
 
-#define _Sound_ClearChannel(ch) { \
-	Channel[ch].playing = 0; \
-	Channel[ch].looping = 0; \
-	Channel[ch].paused = false; \
-	Channel[ch].samples = nullptr; \
-	Channel[ch].chunk = nullptr; \
-	Channel[ch].expire = 0; \
-	Channel[ch].start = 0; \
-	Channel[ch].volume = MAX_VOLUME; \
+INLINE void _Sound_ClearChannel(_Sound_Channel& aChannel) {
+	aChannel.playing = 0;
+	aChannel.looping = 0;
+	aChannel.paused = false;
+	aChannel.samples = nullptr;
+	aChannel.chunk = nullptr;
+	aChannel.expire = 0;
+	aChannel.start = 0;
+	aChannel.volume = MAX_VOLUME;
 }
 
 // public functions
@@ -781,7 +781,7 @@ void Sound_HaltChannel(int ch) {
 	}
 	else {
 	  SDL_LockAudioDevice(AudioID);
-	  _Sound_ClearChannel(ch);
+	  _Sound_ClearChannel(Channel[ch]);
 	  SDL_UnlockAudioDevice(AudioID);
 	}
 }
@@ -794,7 +794,7 @@ void Sound_FreeSFX(SFXData* sfx) {
 	  	// clear the channel if it's playing the SFX
 	  	for (int x = 0; x < _num_channels; ++x) {
 	  	  if (sfx == Channel[x].chunk) {
-	  	  	_Sound_ClearChannel(x);
+	  	  	_Sound_ClearChannel(Channel[x]);
 	  	  }
 	  	}
 	  }
@@ -942,7 +942,7 @@ void audioCallback(void* udata, uint8_t* stream, int len) {
 	  // expire the channel if it's time limit is up
 	  if ( Channel[i].expire > 0 && (uint32_t) Channel[i].expire < uiTicks ) {
 	  	//Sound_HaltChannel(i);
-	  	_Sound_ClearChannel(i);
+	  	_Sound_ClearChannel(Channel[i]);
 	  }
 	  
 	  // mix channel if it's playing

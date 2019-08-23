@@ -1,34 +1,28 @@
+/* * File = levelcode.hpp
+   * Project = simpleLevel
+   * File type = source
+   * Description: This source file is part of the project simpleLevel.
+   * Below, severak functions are declared that modify the state of
+   * the current level. The namespace declares several variables
+   * that hold information about the level. They are described below.
+   * 
+*/
+
 #ifndef LEVELCODE_HPP
 #define LEVELCODE_HPP
 
+#include <generic_class.hpp>
+#include <levelLoad.hpp>
+#include <pointvector>
+
 // standard includes
 #include "stdinc.h"
-
-// SDL2 includes
 #include "sdl_incs.h"
-
-// container for a single object
-#include <custom/generic_class.hpp>
-
-// levelLoad library header
-#include <custom/levelLoad.hpp>
-
-// definition of the Player class; also includes sprite_def.h
-#include "player_def.h"
-
-// std::array definition
-#include <array>
-
-// program window information
 #include "program.hpp"
-
-// compiler features: function attributes
 #include "global_attributes.hpp"
 
-// gamemode definition and functions
+#include "player_def.h"
 #include "gamemode.hpp"
-
-// enumerations for level::levelEvents
 #include "gm_level_defs.h"
 
 // ...
@@ -94,6 +88,9 @@ namespace level {
 	
 	// the current level
 	extern char* CurrentLevel;
+	
+	// array of each tile`s location
+	extern Point<int>* TileLocations;
 	
 	// fixes the
 //	void correctBackground(const SDL_Rect* srcCam, const SDL_Rect* dstCam);

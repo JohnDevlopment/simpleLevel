@@ -45,14 +45,16 @@ std::string LevelInfo_Tileset(const unsigned int index) {
 	  buffer = "0";
 	}
 	else if (index < 256) {
-	  
+	  // nothing
 	}
 	else {
 	  buffer = "000.png";
 	  goto skip;
 	}
 	
-	buffer += std::to_string(index)
+	// add stringified number and extension
+	buffer += std::to_string(index);
+	buffer += ".png";
 	
 skip:
 	
@@ -70,12 +72,10 @@ return _music_files[index].get();
 }
 
 int LevelInfo_MusicID(const std::string& str) {
-	using std::string;
-	
 	int retval;
 	
-	// return the musical index number of the 
-	ret = -1;
+	// locate a file name in an array and return its index number
+	retval = -1;
 	for (int x = 0; x < NUMBER_VALID_SONGS; ++x) {
 	  if (str == _music_files[x].get()) {
 	  	retval = x;

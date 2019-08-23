@@ -5,6 +5,8 @@
 #include "sound.hpp"
 #include "memory.hpp"
 
+generic_class<SDL_Rect> InterRect;
+
 using level::ThePlayer;
 
 /*

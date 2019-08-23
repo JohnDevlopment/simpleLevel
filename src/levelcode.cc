@@ -1,4 +1,10 @@
-// global game data
+// standard headers
+#include <bad_option>
+#include <lvalue_rvalue_pointers.hpp>
+#include <sstream>
+#include <arrays.hpp>
+
+#include "log.hpp"
 #include "game.hpp"
 
 #include "levelcode.hpp"
@@ -7,14 +13,9 @@
 #include "camera.hpp"
 #include "triggers.hpp"
 #include "tcl.hpp"
-#include "log.hpp"
 #include "tile_collision.hpp"
 #include "gm_level.hpp"
 #include "particle_sprite_def.h"
-#include <bad_option>
-#include <lvalue_rvalue_pointers.hpp>
-#include <sstream>
-#include <arrays.hpp>
 
 #define NO_KEY_SYM_BITMASKS 1
 #include "private/player_data_def.h"
@@ -43,6 +44,7 @@ Player* level::ThePlayer;
 int level::BGX;
 Tile* level::Tiles = nullptr;
 char* level::CurrentLevel = nullptr;
+Point<int>* level::TileLocations = nullptr;
 
 // public member functions
 //void level::correctBackground(const SDL_Rect* srcCam, const SDL_Rect* dstCam) {
@@ -112,6 +114,8 @@ int level::load(string file, const PROGRAM& program) {
 	// define the level boundaries
 	camera::defineLevel(Header->width * TILE_WIDTH, Header->height * TILE_HEIGHT);
 	
+	// 
+	
 return 0;
 }
 
@@ -160,7 +164,21 @@ void level::unload() {
 	BG_BG1.unload();
 }
 
+
+
+
+
 // private helper functions
+void makeTileLocList(const int ntiles) {
+	Point<int> tilexy;
+	
+	TileLocations = new Point<int>[ntiles];
+	for (int x = 0; x < ntiles; ++x) {
+	  tilexy = getXY(x, Header->width);
+	  TileLocations[x] = tilexy;
+	}
+}
+
 void updateSpritesAndTilemap(const bool willRenderSprites, void* udata) {
 	SDL_Rect* cam = &CAM_CAMERA;
 	

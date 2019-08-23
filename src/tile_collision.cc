@@ -87,69 +87,79 @@ return (bool) SDL_IntersectRect( &A, &B, &result );
 }
 
 int SpriteTileCollision_LeftRight(SDL_Rect* loc, SDL_Rect& collbox, int steps) {
-	using level::VTiles;
+	using level::Tiles;
 	
 	uint8_t uiFlags = 0;
+	Point<int> myPoint;
+	int iDiff;
+	Tile tile;
 	
-	/*if (steps)*/ {
-	  Point<int> point;
-	  int iDiff;
-	  Tile tile;
-	  
-	  // left side
-	  point[0] = collbox.x;
-	  point[1] = collbox.y + static_cast<int>(0.75f * collbox.h);
-	  
-	  tile = VTiles.at( GetTile2(point) );
-	  if ( TILEFLAG_IsSolid(tile) ) {
-	  	iDiff = TILE_WIDTH - (point.x() % TILE_WIDTH);
-	  	loc->x += iDiff;
-	  	collbox.x += iDiff;
-	  }
-	  
-	  
+	// left side
+	myPoint[0] = collbox.x;
+	myPoint[1] = collbox.y + static_cast<int>(0.75f * collbox.h);
+	
+	tile = Tiles[GetTile2(myPoint)];
+	if ( TILEFLAG_IsSolid(tile) ) {
+	  iDiff = TILE_WIDTH - (myPoint.x() % TILE_WIDTH);
+	  loc->x += iDiff;
+	  collbox.x += iDiff;
 	}
 	
 return static_cast<int>(uiFlags);
 }
 
 int SpriteTileCollisionOneStep(SDL_Rect* loc, SDL_Rect& collbox, int steps) {
-	using level::VTiles;
+	using level::Tiles;
 	
-	#ifndef NDEBUG
-	constexpr int _lvl_bot = TILE_HEIGHT * 30;
-	static_assert(_lvl_bot > 0, "_lvl_bot is <= zero; assertion failed");
-	#endif
+	uint8_t uiFlags = 0;
+	Point<int> collpoint(collbox.x + collbox.w / 2, collbox.y)
+//	int iPointX = collbox.x + collbox.w / 2;
+//	int iPointsY[2] {
+//	  collbox.y,
+//	  collbox.y + collbox.h
+//	};
+	int iSteps = tabs(steps);
 	
-	assert(collbox.y + collbox.h < _lvl_bot);
 	assert(loc != nullptr);
 	
-	Point<int> point;
-	int iSign;
-	uint8_t uiFlags;
 	
-	iSign = tsign(steps);
-	steps = tabs(steps);
+	while (iSteps-- > 0) {
+	  
+	}
+	
+	
+	
+	
+	
+	// check collision for each pixel the sprite is moving
+	while (steps-- > 0) {
+	  int iDiffY = iPoints[1] % TILE_HEIGHT;
+	  Tile aTile;
+	  
+	  iDiffY = bottom.y() % TILE_HEIGHT;
+	  aTile = Tiles[GetTile2(bottom)];
+	  
+	  
+	  
+	}
+	
 	
 	while (steps-- > 0) {
 	  int iDiffY;
 	  uint16_t uiTile;
 	  
-	  point[0] = collbox.x + collbox.w / 2;
-	  point[1] = collbox.y + collbox.h;
 	  uiTile = GetTile2(point);
 	  iDiffY = point.y() % TILE_HEIGHT;
 	  
+	  const Tile& aTile = Tiles[uiTile];
+	  
 	  // if a tile is a slope:
-	  const Tile& tile = VTiles[uiTile];
-	  if ( TILEFLAG_IsSlope(tile) ) {
-	  	const short int* iOffsets = _slope_tables[TILEFLAG_SlopeID(tile)];
+	  if (TILEFLAG_IsSlope(aTile)) {
+	  	const short int* iOffsets = _slope_tables[TILEFLAG_SlopeID(aTile)];
 	  	int iDiffX = point.x() % TILE_WIDTH;
 	  	
-	  	uiFlags = 0;
-	  	
 	  	// if the slope is inverted:
-	  	if ( TILEFLAG_IsInvSlope(tile) ) {
+	  	if (TILEFLAG_IsInvSlope(aTile)) {
 	  	  iDiffX = (TILE_WIDTH - 1) - iDiffX;
 	  	}
 	  	
@@ -162,17 +172,18 @@ int SpriteTileCollisionOneStep(SDL_Rect* loc, SDL_Rect& collbox, int steps) {
 	  }
 	  
 	  // if a tile is solid:
-	  else if ( TILEFLAG_IsSolid(tile) ) {
+	  else if ( TILEFLAG_IsSolid(aTile) ) {
 	  	uiFlags = TILEFLAG_SOLID;
 	  	loc->y -= iDiffY;
 	  	collbox.y -= iDiffY;
 	  }
 	  else {
-	  	uiFlags = _funcs[tile.codeID](loc, &collbox, ENTRY_PLAYER_DOWN);
+	  	uiFlags = _funcs[aTile.codeID](loc, &collbox, ENTRY_PLAYER_DOWN);
 	  }
 	  
 	  // no collision
 	  if (! uiFlags) {
+	  	int iSign = tsign(steps);
 	  	loc->y += iSign;
 	  	collbox.y += iSign;
 	  }
@@ -181,7 +192,7 @@ int SpriteTileCollisionOneStep(SDL_Rect* loc, SDL_Rect& collbox, int steps) {
 	  }
 	}
 	
-return (int) uiFlags;
+return static_cast<int>(uiFlags);
 }
 
 Point<int> GetXY(uint16_t uiTile, int iRowTiles) {

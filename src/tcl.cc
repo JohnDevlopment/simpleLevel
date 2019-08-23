@@ -47,6 +47,8 @@ return ptr_return;
 }
 
 int TclCC_Init(PROGRAM* const program) {
+	using level::CurrentLevel;
+	
 	Log_Cout("### Initializing Tcl ###\n");
 
 	// create Tcl interpreter
@@ -63,11 +65,18 @@ int TclCC_Init(PROGRAM* const program) {
 	  return TCL_ERROR;
 	}
 	
-	Log_Cout("Tcl initialized\n\n");
+	// link CurrentLevel to Tcl variable
+	if (Tcl_LinkVar(gInterp, "CurrentLevel", &CurrentLevel, TCL_LINK_STRING) == TCL_ERROR) {
+	  cerr << "Failed to link CurrentLevel\n";
+	  return TCL_ERROR;
+	}
+	
+	Log_Cout("Tcl variable CurrentLevel linked to C variable\nTcl initialized\n\n");
 	
 return TCL_OK;
 }
 
 void TclCC_Quit() {
+	Tcl_UnlinkVar(gInterp, "CurrentLevel");
 	Tcl_DeleteInterp(gInterp);
 }

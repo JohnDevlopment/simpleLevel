@@ -1,3 +1,41 @@
+/*
+ * tile_collision.hpp
+ * This file is part of simpleLevel
+ *
+ * Copyright (C) 2019 - John
+ *
+ * simpleLevel is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2.1 of the License, or (at your option) any later version.
+ *
+ * simpleLevel is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public License
+ * along with simpleLevel. If not, see <http://www.gnu.org/licenses/>.
+ *
+ *
+ *
+ *
+ *
+ *
+ *
+ *
+ *
+ *
+ *
+ */
+
+/* tile_collision.hpp
+   This file belongs under the project
+   simpleLevel.
+   Several functions here are for locating tiles within the level
+   or pin-pointing their exact coordinates.
+*/
+
 #ifndef TILE_COLLISION_HPP
 #define TILE_COLLISION_HPP
 
@@ -33,7 +71,7 @@ enum ENTRY_POINT {
 extern Sprite* CurrentSprite;
 
 // using the X and Y coordinates, along with the size of the level, get the number of the tile located at that position
-uint16_t GetTile(int x, int y) PURE;
+uint16_t GetTile(int x, int y);
 
 // get the X and Y position of a tile
 Point<int> GetXY(uint16_t uiTile, int iRowTiles);

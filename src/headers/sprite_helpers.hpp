@@ -3,6 +3,9 @@
 
 #include "sprite_router.hpp"
 #include "global_attributes.hpp"
+#include <generic_class.hpp>
+
+extern generic_class<SDL_Rect> InterRect;
 
 /* Returns 1 if the sprite is completely off-camera, or 0 otherwise. An error is returned if A is NULL.
 

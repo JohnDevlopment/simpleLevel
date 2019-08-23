@@ -1,9 +1,8 @@
 #ifndef SPRITE_ROUTER_HPP
 #define SPRITE_ROUTER_HPP
 
-#include <custom/object_class.hpp>
-#include <cstring>
 
+#include <cstring>
 #include "sprite_def.h"
 #include "program.hpp"
 #include "game.hpp"
