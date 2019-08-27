@@ -1,13 +1,10 @@
 #include "player_def.h"
 #include "tile_collision.hpp"
 #include "math.hpp"
-#include "private/player_data_def.h"
 #include "camera.hpp"
 #include "memory.hpp"
 #include "log.hpp"
-
-int SpriteTileCollisionOneStep(SDL_Rect* loc, SDL_Rect& collbox, int steps);
-int SpriteTileCollision_LeftRight(SDL_Rect* loc, SDL_Rect& collbox, int steps);
+#include "sprite_helpers.hpp"
 
 static const float _upSpeeds[] = {-5.5f, -6.5f};
 static const float sc_HorzSpeeds[] = {2.5f, 3.5f};
@@ -22,13 +19,10 @@ Player::Player(SDL_Renderer* ren) : Sprite(255), m_MiscTimer(0), m_InvcTimer(0),
 
 // private:
 void Player::DefaultState(void* data) {
-	using game::FrameCounter;
+	using game::KeySymBits;
+	using game::KeySymBitsFirstFrame;
 	
-	uint16_t uiBits, uiFirst;
 	uint8_t uiIndex = 0;
-	
-	uiBits  = * cast(data, _PlayerData*)->KeySymBits;
-	uiFirst = * cast(data, _PlayerData*)->KeySymBitsFirstFrame;
 	
 	// if the player is stunned
 	if (m_StunTimer > 0)
@@ -40,13 +34,13 @@ void Player::DefaultState(void* data) {
 	// or if they`re dying
 	else if (m_DeathTimer > 0) {
 	  if (--m_DeathTimer == 0)
-	  	cast(data, _PlayerData*)->what = 1;
+	  	* cast(data, int*) = 1;
 	}
 	
-	// bar input detections
+	// bar input detections if stunned
 	if (m_StunTimer == 0) {
 	  // holding the S key
-	  if (uiBits & 1) {
+	  if (KeySymBits & 1) {
 	  	if (m_MiscTimer < 10)
 	  	  ++m_MiscTimer;
 	  	else
@@ -57,12 +51,12 @@ void Player::DefaultState(void* data) {
 	  	--m_MiscTimer;
 	  
 	  // holding the left arrow key
-	  if (uiBits & 2) {
+	  if (KeySymBits & 2) {
 	  	m_obj.xspeed = -(sc_HorzSpeeds[uiIndex]);
 	  	m_Dir = 0;
 	  }
 	  // holding the right arrow key
-	  else if (uiBits & 4) {
+	  else if (KeySymBits & 4) {
 	  	m_obj.xspeed = sc_HorzSpeeds[uiIndex];
 	  	m_Dir = 1;
 	  }
@@ -72,12 +66,12 @@ void Player::DefaultState(void* data) {
 	  }
 	  
 	  // up arrow key pressed once
-	  if (uiFirst & 8) {
+	  if (KeySymBitsFirstFrame & 8) {
 	  	Jump();
 	  }
 	  // down arrow key held down
-	  else if (uiBits & 16) {
-	  	if ( GetColl(M_COLL_DOWN) )
+	  else if (KeySymBits & 16) {
+	  	if (GetColl(M_COLL_DOWN))
 	  	  set_state(1);
 	  }
 	}
@@ -87,13 +81,11 @@ void Player::DefaultState(void* data) {
 }
 
 void Player::DefendState(void* data) {
-	const uint16_t uiBits = * cast(data, _PlayerData*)->KeySymBits;
+	using game::KeySymBits;
 	
 	// if the player stops holding down, revert back to state 0
-	if (! (uiBits & 16)) {
+	if (! (KeySymBits & 16)) {
 	  set_state(0);
-//	  m_obj.launch_xspeed(20.0f);
-//	  m_obj.yspeed = -5.0f;
 	}
 }
 
@@ -129,8 +121,8 @@ void Player::set_state(int state) {
 
 void Player::Graphics(void* data) {
 	using game::FrameCounter;
+	using game::KeySymBits;
 	
-	const uint16_t uiBits = * cast(data, _PlayerData*)->KeySymBits;
 	uint8_t uiFrameIdx = 0;
 	
 	switch (m_state) {
@@ -138,7 +130,7 @@ void Player::Graphics(void* data) {
 	  
 	  case 0:
 	  	// moving left or right
-	  	if (uiBits & 6) {
+	  	if (KeySymBits & 6) {
 	  	  uiFrameIdx = ((FrameCounter / 4) & 1) + 3 + m_Dir * 8;
 	  	}
 	  	// standing still
@@ -171,21 +163,16 @@ int Player::Main(void* data) {
 	  default: break;
 	  
 	  case 0:
-	  	DefaultState(data);
+	  	DefaultState(&retval);
 	  	break;
 	  
 	  case 1:
-	  	DefendState(data);
+	  	DefendState(&retval);
 	  	break;
 	  
 	  case 2:
-	  	AttackState(data);
+	  	AttackState(&retval);
 	  	break;
-	}
-	
-	if ( cast(data, _PlayerData*)->what == 1 ) {
-	  retval = 1;
-	  cast(data, _PlayerData*)->what = 0;
 	}
 	
 	Graphics(data);
@@ -233,8 +220,6 @@ return 0;
 }
 
 int Player::Hurt() {
-	using game::HeapStack;
-	
 	constexpr float _static_xspeeds[2] = {
 	  20.0f, -20.0f
 	};
@@ -256,7 +241,7 @@ int Player::Hurt() {
 	  case 1:
 	  	{
 	  	  // defend state TODO work on
-	  	  SDL_Rect* intersection = memblk(HeapStack, SDL_Rect, HS_CollRect);
+	  	  SDL_Rect* intersection = InterRect.getp();
 	  	  SDL_Rect& playerhitbox = m_obj.add_hitbox();
 	  	  
 	  	  // player is facing left

@@ -43,17 +43,16 @@
 #include "triggers.hpp"
 #include "tcl.hpp"
 #include "sprites/sprite000_def.h"
+#include "private/player_data_def.h"
+
 
 #define NDEBUG
 #include "log.hpp"
 #include "math.hpp"
 #include "gm_level.hpp"
 
-#include "private/player_data_def.h"
-#include "particle_sprite_def.h"
-
 using namespace std;
-using namespace game;
+using game::Flags;
 using level::ThePlayer;
 using level::update;
 
@@ -71,9 +70,6 @@ static StaticDArray<SDL_Scancode,10> _scancodes = {
 	SDL_SCANCODE_UNKNOWN, SDL_SCANCODE_UNKNOWN, SDL_SCANCODE_UNKNOWN,
 	SDL_SCANCODE_UNKNOWN
 };
-
-// data to forward to Player::Main
-static generic_class<_PlayerData> _player_data;
 
 // level music
 static MusData* LevelMusic = nullptr;
@@ -105,13 +101,17 @@ return 0;
 /* Notes to self: firstly, uipKeyBits is a field of bits that each correspond to a key being pressed. Mask the bits
    using _key_sym_bitmasks indexed by a value of GMLevel_KeyListSym (header: gm_level_defs.h). That is how you
    can tell what inputs have been inputted. */
-static int _main_normal(GameMode* const gm, const PROGRAM&) {
-	using namespace level;
-	using game::FrameCounter;
-	using game::Flags;
-	
+//static int _main_normal(GameMode* const gm, const PROGRAM& pg) {
+//	
+//	
+//return 0;
+//}
+
+////////////////////////// gm_level MAIN routine /////////////////////////
+// search code: LEVEL_MAIN
+int _gm_level_main(GameMode* const gm, const PROGRAM& program) {
 	// update the level
-	update(gm, _player_data.getp(), 0);
+	level::update(gm, program.renderer);
 	
 	// render the black screen if the right flags are set
 	if (Flags.mask(FADING))
@@ -129,20 +129,10 @@ static int _main_normal(GameMode* const gm, const PROGRAM&) {
 return 0;
 }
 
-////////////////////////// gm_level MAIN routine /////////////////////////
-// search code: LEVEL_MAIN
-int _gm_level_main(GameMode* const gm, const PROGRAM& program) {
-	
-	// TODO route this to other functions in this file
-	
-return _main_normal(gm, program);
-}
-
 //////////////////////// gm_level CLEANUP routine ///////////////////////
 // search code: LEVEL_CLEAN
 int _gm_level_cleanup(GameMode* const gm, const PROGRAM& program) {
 	using level::unload;
-	using game::Flags;
 	
 	// unload the level
 	level::unload();
@@ -155,7 +145,7 @@ int _gm_level_cleanup(GameMode* const gm, const PROGRAM& program) {
 {
 	int iFlags = 0;
 	
-	if ( Flags.mask(LEVEL_CLEANUP) ) {
+	if (Flags.mask(LEVEL_CLEANUP)) {
 	  Sound_FreeMUS(LevelMusic);
 	  LevelMusic = nullptr;
 	  iFlags |= LEVEL_CLEANUP;
@@ -163,13 +153,16 @@ int _gm_level_cleanup(GameMode* const gm, const PROGRAM& program) {
 	iFlags |= QUITGAME;
 	Flags.unset(iFlags);
 }
-		
+	
 return 0;
 }
 
 /////////////////////// gm_level INIT routine //////////////////////////
 // search code: LEVEL_INIT
 int _gm_level_init(GameMode* const gm, const PROGRAM& program) {
+	using game::KeySymBits;
+	using game::KeySymBitsFirstFrame;
+	
 	// retrieve the scancode of each key defined here
 	if (! _scancodes[SCAN_END]) {
 	  _scancodes[SCAN_S]      = SDL_GetScancodeFromKey(SDLK_s);
@@ -250,6 +243,9 @@ static void eventBits(uint32_t& A, uint32_t& B, const uint32_t bit) {
 // internal key event functions
 // search code: INTFUNC_KEY
 static int _keyboard_normal(SDL_Event& event, GameMode* const gm, const uint8_t* keystates) {
+	using game::KeySymBits;
+	using game::KeySymBitsFirstFrame;
+	
 	// iterate through a list of all key inputs
 	for (uint8_t x = 0; x < GMLevel_Key_NumOfValues; ++x) {
 	  switch (_key_sym[x]) {

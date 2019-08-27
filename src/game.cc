@@ -100,6 +100,8 @@ bool game::loadMedia(SDL_Renderer* ren) {
 	  Log_Cout("Allocated %d bytes of potential save data\n", (int) NumberOfSaveBytes);
 	}
 	
+	Log_Cout("Initialized global game resources\n\n");
+	
 return true;
 }
 

@@ -27,7 +27,8 @@ int gm_levelInit(void* const vgm, const PROGRAM& pgrm) {
 	  return 0;
 	
 	// load the level file into memory
-	retval = level::load(level::CurrentLevel, pgrm);
+	//level::CurrentLevel
+	retval = level::load("levels/rt1-1.dat", pgrm);
 	if (retval)
 	  return retval;
 	

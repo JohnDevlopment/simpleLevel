@@ -80,4 +80,8 @@ Point<int> GetXY(uint16_t uiTile, int iRowTiles);
 Point<int> TileLocation(int x, int y);
 void TileLocationInRect(SDL_Rect& rect, int x, int y);
 
+// sprite-to-tile collision
+int SpriteTileCollisionOneStep(SDL_Rect* loc, SDL_Rect& collbox, int steps);
+int SpriteTileCollision_LeftRight(SDL_Rect* loc, SDL_Rect& collbox, int steps);
+
 #endif /* TILE_COLLISION_HPP */

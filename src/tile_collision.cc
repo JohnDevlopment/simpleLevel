@@ -110,75 +110,48 @@ return static_cast<int>(uiFlags);
 
 int SpriteTileCollisionOneStep(SDL_Rect* loc, SDL_Rect& collbox, int steps) {
 	using level::Tiles;
-	using level::TileLocations;
+//	using level::TileLocations;
 	
 	uint8_t uiFlags = 0;
-	Point<int> collpoint_top(collbox.x + collbox.w / 2, collbox.y);
-	Point<int> collpoint_bot(collbox.x + collbox.w / 2, collbox.y + collbox.h);
-	Tile curTile;
+	Tile* curTile;
 	
-	//typedef int (*TileFunction)(SDL_Rect* loc, SDL_Rect* col, const ENTRY_POINT entry);
+	// tile underneath the sprite
+{
+	const int iHw = collbox.w / 2;
+	Point<int> collbotm_left(collbox.x + iHw / 2, collbox.y + collbox.h);
+	uint16_t uiTile1, uiTile2;
 	
-	// select the tile at the bottom of the sprite
-	curTile = Tiles[GetTile2(collpoint_bot)];
-	if (TILEFLAG_IsSolid(curTile)) {
-	  if ( TILEFLAG_IsSlope(curTile) ) {
-	  	//
-	  }
-	  else {
-	  	uiFlags = _funcs[curTile.codeID](loc, (int*) &collpoint_bot, ENTRY_PLAYER_DOWN);
-	  }
+	uiTile1 = GetTile2(collbotm_left);
+	uiTile2 = GetTile(collbox.x + iHw * 1.5f, collbotm_left.y());
+	
+	// select tile underneath the left point
+	curTile = &Tiles[uiTile1];
+	if (TILEFLAG_IsSolid(*curTile)) {
+	  uiFlags = _funcs[curTile->codeID](loc, &collbox, ENTRY_PLAYER_DOWN);
 	}
 	
+	// select tile underneath the right point
+	curTile = &Tiles[uiTile2];
+	if (TILEFLAG_IsSolid(*curTile) && uiTile1 != uiTile2) {
+	  uiFlags |= _funcs[curTile->codeID](loc, &collbox, ENTRY_PLAYER_DOWN);
+	}
+}
 	
+	// tile above the sprite
+{
+	Point<int> colltop(collbox.x + collbox.w / 2, collbox.y);
 	
-//	while (steps-- > 0) {
-//	  int iDiffY;
-//	  uint16_t uiTile;
-//	  
-//	  uiTile = GetTile2(point);
-//	  iDiffY = point.y() % TILE_HEIGHT;
-//	  
-//	  const Tile& aTile = Tiles[uiTile];
-//	  
-//	  // if a tile is a slope:
-//	  if (TILEFLAG_IsSlope(aTile)) {
-//	  	const short int* iOffsets = _slope_tables[TILEFLAG_SlopeID(aTile)];
-//	  	int iDiffX = point.x() % TILE_WIDTH;
-//	  	
-//	  	// if the slope is inverted:
-//	  	if (TILEFLAG_IsInvSlope(aTile)) {
-//	  	  iDiffX = (TILE_WIDTH - 1) - iDiffX;
-//	  	}
-//	  	
-//	  	if (iDiffY > iOffsets[iDiffX]) {
-//	  	  short int iOff = iDiffY - iOffsets[iDiffX];
-//	  	  loc->y -= iOff;
-//	  	  collbox.y -= iOff;
-//	  	  uiFlags = TILEFLAG_SLOPE;
-//	  	}
-//	  }
-//	  
-//	  // if a tile is solid:
-//	  else if ( TILEFLAG_IsSolid(aTile) ) {
-//	  	uiFlags = TILEFLAG_SOLID;
-//	  	loc->y -= iDiffY;
-//	  	collbox.y -= iDiffY;
-//	  }
-//	  else {
-//	  	uiFlags = _funcs[aTile.codeID](loc, &collbox, ENTRY_PLAYER_DOWN);
-//	  }
-//	  
-//	  // no collision
-//	  if (! uiFlags) {
-//	  	int iSign = tsign(steps);
-//	  	loc->y += iSign;
-//	  	collbox.y += iSign;
-//	  }
-//	  else {
-//	  	steps = 0;
-//	  }
-//	}
+	curTile = &Tiles[GetTile2(colltop)];
+	if (TILEFLAG_IsSolid(*curTile)) {
+	  uiFlags = _funcs[curTile->codeID](loc, &collbox, ENTRY_PLAYER_UP);
+	}
+}
+	
+	// move player
+	if (! (uiFlags & TILEFLAG_SOLID)) {
+	  loc->y += steps;
+	  collbox.y += steps;
+	}
 	
 return static_cast<int>(uiFlags);
 }
