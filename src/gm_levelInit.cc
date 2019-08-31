@@ -12,7 +12,6 @@ using namespace std;
 
 int gm_levelInit(void* const vgm, const PROGRAM& pgrm) {
 	GameMode* gm = (GameMode*) vgm;
-	int retval;
 	
 	BG_BLACK.blit();
 	
@@ -28,9 +27,10 @@ int gm_levelInit(void* const vgm, const PROGRAM& pgrm) {
 	
 	// load the level file into memory
 	//level::CurrentLevel
-	retval = level::load("levels/rt1-1.dat", pgrm);
-	if (retval)
-	  return retval;
+	if (level::load("levels/rt1-1.dat", pgrm)) {
+	  level::unload();
+	  return 1;
+	}
 	
 	// reset the background color
 	SDL_SetRenderDrawColor(pgrm.renderer, 0, 0, 0, 0xff);
