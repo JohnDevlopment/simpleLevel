@@ -6,6 +6,8 @@
 
 using namespace std;
 
+static MusData* MenuMusic = nullptr;
+
 // mouse input function
 int gm_menu_event_mousebutton(SDL_Event& event, GameMode* const gm, uint8_t mask) {
 	using game::Flags;
@@ -25,7 +27,7 @@ int gm_menu_event_mousebutton(SDL_Event& event, GameMode* const gm, uint8_t mask
 	  	// fade out to black
 	  	Flags.set(FADEOUT);
 	  	
-	  	// change to gamemode 2 in 50 frames
+	  	// change to gamemode 2 in 50 frames; stop music; play sfx
 	  	GM_ChangeGamemode(gm, 2, miliseconds_to_frames(2000));
 	  	Sound_FadeOutMusic(1000);
 	  	Sound_PlaySFX(SFXStartGame, 0);
@@ -38,11 +40,7 @@ return 0;
 
 // timer callback
 static uint32_t timerCallback_playMenuMusic(uint32_t interval, void* data) {
-	// player the music for one iteration
-	MusData* mus = (MusData*) data;
-	if (mus) {
-	  Sound_PlayMusic(mus, 1);
-	}
+	Sound_PlayMusic(MenuMusic, 1);
 	
 return 0;
 }
@@ -51,57 +49,53 @@ return 0;
 static int _gm_menu_init(GameMode* const gm, const PROGRAM& program) {
 	using namespace game;
 	
-	MusData* mus;
+	Image* bgs = new Image[2];
 	SDL_TimerID timer = 0;
 	
-	// open background image; print error message in background if it fails
-	BG_BG1.open("images/backgrounds/grassy_field.png");
+	// set renderers
+	bgs[0].renderer = program.renderer;
+	bgs[1].renderer = program.renderer;
 	
-	if (BG_BG1.error())
-	  Log_Cerr("Failed to load background image grassy_field.png: %s\n", BG_BG1.get_error());
+	// open background image; print error message in background if it fails
+	bgs[0].open("images/backgrounds/grassy_field.png");
+	
+	if (bgs[0].error())
+	  Log_Cerr("Failed to load background image grassy_field.png: %s\n", bgs[0].get_error());
 	
 	// open button UI image
-	BG_BG2.open("images/ui/button_click_here.png");
+	bgs[1].open("images/ui/button_click_here.png");
 	
-	if (BG_BG2.error()) {
-	  cerr << BG_BG2.get_error() << " -- aborting program\n";
-	  return 1;
-	}
-	
-	// open dialogue box image
-	BG_DIALOGUEBOX.open("images/ui/dbox.png");
-	
-	if (BG_DIALOGUEBOX.error()) {
-	  cerr << BG_DIALOGUEBOX.get_error() << " -- aborting program\n";
+	if (bgs[1].error()) {
+	  cerr << bgs[1].get_error() << " -- aborting program\n";
 	  return 1;
 	}
 	
 	// load music
-	mus = Sound_LoadMUSType("audio/music/menu.ogg", MUS_TYPE_OGG);
-	if (mus) {
-	  GM_SetData(gm, mus);
-	  MusData_SetVolume(mus, 45);
-	}
+	MenuMusic = Sound_LoadMUSType("audio/music/menu.ogg", MUS_TYPE_OGG);
+	if (MenuMusic)
+	  MusData_SetVolume(MenuMusic, 45);
 	
 	// play the music after a 800 miliseconds
-	timer = SDL_AddTimer(800, timerCallback_playMenuMusic, mus);
-	
+	timer = SDL_AddTimer(800, timerCallback_playMenuMusic, MenuMusic);
 	if (! timer)
 	  std::cerr << "Failed to initialize timer: " << SDL_GetError() << '\n';
 	
 	// fade in from black
 	Flags.set(FADEIN);
 	
+	// save bg images to GameMode
+	GM_SetData(gm, bgs);
+	
 return 2;
 }
 
 // run every frame after init
 static int _gm_menu_blit(GameMode* const gm, const PROGRAM& program) {
-	using game::Flags;
+	Image* bgs = (Image*) gm->data;
 	
 	// background, button
-	BG_BG1.blit();
-	BG_BG2.blit(240,180);
+	bgs[0].blit();
+	bgs[1].blit(240, 180);
 	
 	// black rectangle
 	BG_BLACK.blit();
@@ -111,13 +105,12 @@ return 0;
 
 // cleanup function
 static int _gm_menu_cleanup(GameMode* const gm, const PROGRAM& program) {
-	// unload the background and button images
-	BG_BG1.unload();
-	BG_BG2.unload();
+	// free ui images
+	delete[] (Image*) gm->data;
+	GM_ClearData(gm);
 	
 	// free music
-	Sound_FreeMUS(reinterpret_cast<MusData*>(gm->data));
-	GM_ClearData(gm);
+	Sound_FreeMUS(MenuMusic);
 	
 return 0;
 }

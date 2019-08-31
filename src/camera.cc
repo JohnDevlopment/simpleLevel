@@ -117,21 +117,21 @@ void camera::track() {
 	  // the player is above the 1/3 line of the camera
 	  if (iSpriteCenter < (cam.y + 160)) {
 	  	CamYSpd = LinearInterp(CamYSpd, -5, cam_delta2);
+	  	scrolly(CamYSpd);
 	  }
 	  
 	  // below the 2/3 line
 	  else if (iSpriteCenter > (cam.y + 320)) {
 	  	CamYSpd = LinearInterp(CamYSpd, 10, cam_delta2);
+	  	scrolly(CamYSpd);
 	  }
 	  
 	  // slow the camera down if it`s still moving but shouldn`t
-	  if (CamYSpd) {
+	  else {
 	  	if (CamYSpd > 0.2f)
-	  		CamYSpd = CamYSpd * 0.3f;
+	  	  CamYSpd *= 0.75f;
 	  	else
-	  		CamYSpd = 0;
-	  	
-	  	scrolly(CamYSpd);
+	  	  CamYSpd = 0;
 	  }
 	}
 	

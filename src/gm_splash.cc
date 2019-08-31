@@ -2,11 +2,13 @@
 #include "gm_splash.hpp"
 #include "endian.hpp"
 #include "sound.hpp"
+#include "log.hpp"
 
 using namespace std;
 
 static int _gm_splash_cleanup(GameMode* const gm, const PROGRAM& program) {
-	BG_BG1.unload();
+	delete reinterpret_cast<Image*>(gm->data);
+	GM_ClearData(gm);
 	
 return 0;
 }
@@ -20,23 +22,25 @@ static int _gm_splash_blit(GameMode* const gm, const PROGRAM& program) {
 	}
 	
 	// render two images
-	BG_BG1.blit();
+	reinterpret_cast<Image*>(gm->data)->blit();
 	BG_BLACK.blit();
 	
 return 0;
 }
 
 static int _gm_splash_screen_load_image(GameMode* const gm, const PROGRAM& program) {
+	Image* bg = new Image("images/ui/splash.bmp", program.renderer);
+	
+	if (bg->error())
+	  Log_Cerr("Failed to load \"images/ui/splash.bmp\" -- %s\n", bg->get_error());
+	else
+	  bg->set_blit_size(WIDTH, HEIGHT);
+	
 	// set no opacity on black screen
 	BG_BLACK.set_alpha(0);
 	
-	// open image and resize it to fit the screen
-	if (! BG_BG1.open("images/ui/splash.bmp"))
-	  cerr << BG_BG1.get_error() << '\n';
-	else
-	  BG_BG1.set_blit_size(WIDTH, HEIGHT);
-	
 	// set timer for splash image to be 150 frames
+	GM_SetData(gm, bg);
 	GM_ChangeGamemode(gm, 1, 150);
 	
 return 0;

@@ -1,27 +1,20 @@
 #include "string.h"
 #include "tmath.hpp"
+#include <algorithm>
 
 using std::strlen;
 
-/* int MIX_string_equals(const char *str1, const char *str2)
-{
-    while ( *str1 && *str2 ) {
-        if ( toupper((unsigned char)*str1) !=
-             toupper((unsigned char)*str2) )
-            break;
-        ++str1;
-        ++str2;
-    }
-    return (!*str1 && !*str2);
-}
-*/
-
-int String_ToUpper(int x) {
-#ifdef HAS_CCTYPE
-	return std::toupper(x);
-#else
-	return ((x >= 'a') && (x <= 'z')) ? ('a' + (x - 'A')) : x;
-#endif
+size_t String_CharCount(const char* str, int findchar) {
+	using std::strchr;
+	
+	size_t szCnt;
+	
+	for (const char* c = str; *c != '\0'; ++c) {
+	  if (*c == (char) findchar)
+	  	++szCnt;
+	}
+	
+return szCnt;
 }
 
 int String_IsEqual(const char* str1, const char* str2) {
@@ -34,6 +27,15 @@ int String_IsEqual(const char* str1, const char* str2) {
 return ! *str1 && ! *str2;
 }
 
+int String_ToUpper(int x) {
+#ifdef HAS_CCTYPE
+	return std::toupper(x);
+#else
+	return ((x >= 'a') && (x <= 'z')) ? ('a' + (x - 'A')) : x;
+#endif
+}
+
+/*
 int String_strlcpy(char* dst, const char* src, size_t maxlen) {
 #ifdef HAVE_STRLCPY
 	return strlcpy(dst, src, maxlen);
@@ -61,4 +63,4 @@ size_t String_strlcat(char* dst, const char* src, size_t maxlen) {
 	
 return uiDstLen + uiSrcLen;
 #endif
-}
+}*/
