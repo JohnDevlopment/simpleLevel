@@ -33,14 +33,12 @@
 #define TILEFLAG_SLOPE             0x0002
 #define TILEFLAG_SOLID             0x0004
 #define TILEFLAG_SLOPEINV          0x0008
-////#define TILEFLAG_LEDGE             0x0100
 #define TILEFLAG_SLOPEID           0x00f0
 
 // how many bits to shift for each flag
 #define TFBITS_Slope               1
 #define TFBITS_IsSolid             2
 #define TFBITS_IsInvSlope          3
-////#define TFBITS_IsLedge             8
 #define TFBITS_SlopeID             4
 
 // macros to turn integers into flags
@@ -51,7 +49,6 @@
 #define TILEFLAG_IsSlope(tile)     (((tile).flags & TILEFLAG_SLOPE) >> TFBITS_Slope)         // 1 if the tile is a slope, 0 otherwise
 #define TILEFLAG_IsSolid(tile)     (((tile).flags & TILEFLAG_SOLID) >> TFBITS_IsSolid)       // 1 if the slope is a solid, 0 otherwise
 #define TILEFLAG_IsInvSlope(tile)  (((tile).flags & TILEFLAG_SLOPEINV) >> TFBITS_IsInvSlope) // 1 if the slope if facing right, 0 otherwise
-////#define TILEFLAG_IsLedge(tile)     (((tile).flags & TILEFLAG_LEDGE) >> TFBITS_IsLedge)       // 1 if the slope is a ledge
 #define TILEFLAG_SlopeID(tile)     (((tile).flags & TILEFLAG_SLOPEID) >> TFBITS_SlopeID)     // slope table lookup number
 
 // misc defines
@@ -94,6 +91,9 @@ namespace level {
 	
 	// array of each tile`s location
 	extern Point<int>* TileLocations;
+	
+	// background images
+	extern SDL_Texture* Backgrounds[];
 	
 	// fixes the
 //	void correctBackground(const SDL_Rect* srcCam, const SDL_Rect* dstCam);

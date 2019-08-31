@@ -6,8 +6,8 @@
 #include "log.hpp"
 #include "sprite_helpers.hpp"
 
-static const float _upSpeeds[] = {-5.5f, -6.5f};
-static const float sc_HorzSpeeds[] = {2.5f, 3.5f};
+static const float _upSpeeds[] = {-7.5f, -8.0f};
+static const float sc_HorzSpeeds[] = {2.5f, 3.0f};
 
 Player::Player(SDL_Renderer* ren) : Sprite(255), m_MiscTimer(0), m_InvcTimer(0),
                                     m_DeathTimer(0), m_StunTimer(0), m_FallDistance(0),
@@ -207,7 +207,7 @@ int Player::Init() {
 	// set the player's X delta
 	m_obj.xfactor = CalcDelta(FPS, 7);
 	
-	m_obj.collfunc_ud[0] = SpriteTileCollisionOneStep;
+	m_obj.collfunc_ud[0] = PlayerTileCollisionUpDown;
 	m_obj.collfunc_lr = SpriteTileCollision_LeftRight;
 	
 	// set the player's HP
@@ -296,7 +296,7 @@ void Player::Jump() {
 	// if the player is on the ground
 	if (GetColl(M_COLL_DOWN)) {
 	  // index to a speed table
-	  const int iSpeed = tabs( m_obj.curxspeed() ) > 2.5f;
+	  const int iSpeed = tabs(m_obj.curxspeed()) > sc_HorzSpeeds[0];
 	  
 	  // attribute a negative Y speed
 	  m_obj.yspeed = _upSpeeds[iSpeed];
