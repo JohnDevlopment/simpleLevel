@@ -12,37 +12,37 @@
 */
 
 // system headers
+#include <algorithm>
+#include <arrays.hpp>
 #include <bad_option>
+#include <lvalue_rvalue_pointers.hpp>
 #include <sstream>
 
-// custom hears
-#include <arrays.hpp>
-#include <lvalue_rvalue_pointers.hpp>
-
-#include "log.hpp"
+#include "camera.hpp"
 #include "game.hpp"
+#include "gm_level.hpp"
 #include "levelcode.hpp"
 #include "levelinfo.hpp"
+#include "log.hpp"
+#include "math.hpp"
+#include "particle_sprite_def.h"
 #include "sound.hpp"
-#include "camera.hpp"
-#include "triggers.hpp"
+#include "string.h"
 #include "tcl.hpp"
 #include "tile_collision.hpp"
-#include "gm_level.hpp"
-#include "particle_sprite_def.h"
+#include "triggers.hpp"
 
 // private function prototypes | code: INTFUNC_DECL
 static void makeTileLocList(const int);
-static bool loadBackground();
+static bool loadBackground(SDL_Renderer* const);
 static bool loadTileset(SDL_Surface**);
 static bool createTilemaps(SDL_Surface**);
 static void buildLevel(SDL_Surface*, SDL_Surface**);
 static bool turnTilemapsToTexture(SDL_Surface** const, SDL_Renderer*);
-//static void updateBackground(SDL_Rect* const);
-//static void updateSpritesAndTilemap(SDL_Renderer* const);
 static SDL_Rect getXY(const int, uint16_t);
 static void placeTile(const Tile&, SDL_Surface*, uint16_t, SDL_Surface**);
 static int flagsBasedOnCodeID(const Tile&);
+static void renderBackground(SDL_Renderer* const, const SDL_Rect*);
 
 // import namespaces
 using namespace std;
@@ -56,6 +56,7 @@ int level::BGX;
 Tile* level::Tiles = nullptr;
 char* level::CurrentLevel = nullptr;
 Point<int>* level::TileLocations = nullptr;
+SDL_Texture* level::Backgrounds[2];
 
 // public member functions | code: EXTFUNC_IMPL
 //void level::correctBackground(const SDL_Rect* srcCam, const SDL_Rect* dstCam) {
@@ -96,7 +97,7 @@ int level::load(string file, const PROGRAM& program) {
 	}
 	
 	// load background image
-	if (! loadBackground())
+	if (! loadBackground(program.renderer))
 	  return 1;
 	
 	// load tileset image into surface
@@ -131,10 +132,12 @@ return 0;
 }
 
 void level::update(GameMode* gm, SDL_Renderer* const ren) {
-//	updateBackground(&CAM_CAMERA);
-//	updateSpritesAndTilemap();
+	camera::track();
 	
 	SDL_Rect* cam = &CAM_CAMERA;
+	
+	// render backgrounds relative to the camera
+	renderBackground(ren, cam);
 	
 	// render back tilemap
 	SDL_RenderCopy(ren, TILEMAP_BACK, cam, nullptr);
@@ -163,7 +166,7 @@ void level::unload() {
 	delete[] TileLocations;
 	TileLocations = nullptr;
 	
-	// unload tilemaps
+	// unload tilemaps; free background images
 	Free(&TILEMAP_BACK, &TILEMAP_FRONT);
 	
 	// reset background position
@@ -171,8 +174,7 @@ void level::unload() {
 	
 	// unload background images
 	if (! Flags.mask(DONT_UNLOAD_BGS)) {
-	  BG_BG2.unload();
-	  BG_BG1.unload();
+	  Free(&Backgrounds[0], &Backgrounds[1]);
 	}
 	else
 	  Flags.unset(DONT_UNLOAD_BGS);
@@ -189,60 +191,6 @@ void makeTileLocList(const int ntiles) {
 	}
 }
 
-
-//void updateSpritesAndTilemap(SDL_Renderer* const ren) {
-//	SDL_Rect* cam = &CAM_CAMERA;
-//	
-//	// render back tilemap
-//	SDL_RenderCopy(ren, TILEMAP_BACK, cam, nullptr);
-//	
-//	// update the player`s data and graphics
-//	CurrentSprite = ThePlayer;
-//	if (ThePlayer->Main(udata) == 1) {
-//	  game::Flags.set(FADEOUT|QUITGAME);
-//	  camera::Track = false;
-//	}
-//	
-//	// render front tilemap
-//	SDL_RenderCopy(ren, TILEMAP_FRONT, cam, nullptr);
-//}
-
-//void updateBackground(SDL_Rect* const camera) {
-//	using camera::BGMinX;
-//	using camera::BGMinY;
-	
-	// render background(s)
-//	{ 
-//	  auto itr = camera::BGLayers.begin();
-//	  short int x = 0;
-//	  
-//	  while (itr != camera::BGLayers.end()) {
-//	  	Background_Base* ptr = *itr;
-//	  	
-//	  	// call the background class' render function
-//	  	if (ptr) {
-//	  	  ptr->check(camera); // calculates whether camera is within background's rect
-//	  	  Point<int> bgpos = ptr->get_position(); // location of the background
-//	  	  
-//	  	  // render background
-//	  	  Image* pImg = LevelInfo_BackgroundLayerID(x);
-//	  	  
-//	  	  pImg->blit(bgpos.x(),         bgpos.y(), camera);
-//	  	  pImg->blit(bgpos.x() + WIDTH, bgpos.y(), camera);
-//	  	  ++x;
-//	  	}
-//	  	else {
-//	  	  Image* pImg = LevelInfo_BackgroundLayerID(x);
-//	  	  pImg->blit(0, 0, camera);
-//	  	  pImg->blit(WIDTH, 0, camera);
-//	  	  ++x;
-//	  	}
-//	  	
-//	  	++itr;
-//	  }
-//	}
-//}
-
 void buildLevel(SDL_Surface* surTileset, SDL_Surface** surTilemaps) {
 	Tile* aTile = Tiles;
 	const uint16_t uiSize = Header->width * Header->height;
@@ -250,7 +198,7 @@ void buildLevel(SDL_Surface* surTileset, SDL_Surface** surTilemaps) {
 	for (uint16_t a = 0; a < uiSize; ++a) {
 	  int iFlags = flagsBasedOnCodeID(*aTile);
 	  
-	  aTile->flags = (uint16_t) iFlags;
+	  aTile->flags = (uint8_t) iFlags;
 	  placeTile(*aTile, surTileset, a, surTilemaps);
 	  ++aTile;
 	}
@@ -285,6 +233,7 @@ int flagsBasedOnCodeID(const Tile& tile) {
 	  	
 	  	case 1:
 	  	case 25:
+	  	case 27:
 	  	  iFlags |= TILEFLAG_SOLID;
 	  	  break;
 	  }
@@ -330,20 +279,53 @@ bool loadTileset(SDL_Surface** surface) {
 return true;
 }
 
-bool loadBackground() {
-	std::string buffer = "images/backgrounds/";
-	const char* sFile = LevelInfo_Background(Header->background);
+bool loadBackground(SDL_Renderer* const ren) {
+	using game::loadTexture;
+	using std::copy;
 	
-	// if the background is already loaded, then return
-	if (BG_BG1.loaded())
+	constexpr int _sBuffer_len = 45;
+	
+	char sBuffer[_sBuffer_len];
+	const char *sSpace, *sFileStr;
+	SDL_Texture* texture;
+	
+	// backgrounds were not unloaded or the header bg index is zero
+	if (Backgrounds[0] || Backgrounds[1] || ! Header->background)
 	  return true;
 	
-	buffer += sFile;
+	// base file string based on bg index
+	sFileStr = LevelInfo_Background(Header->background);
 	
-	// load background
-	if (! BG_BG1.open(buffer.c_str())) {
-	  cerr << "Failed to load " << buffer << ": " << BG_BG1.get_error() << '\n';
-	  return false;
+	// append first substring to the directory prefix
+	String_strcpy(sBuffer, "images/backgrounds/");
+	sSpace = String_strchr(sFileStr, ' ');
+	
+	if (sSpace == nullptr) {
+	  String_strlcat(sBuffer, sFileStr, _sBuffer_len);
+	}
+	else {
+	  std::memset(sBuffer+19, 0, _sBuffer_len-19);
+	  copy((char*) sFileStr, (char*) std::min((int) sFileStr+26, (int) sSpace), sBuffer+19);
+	}
+	
+	// load first texture from file
+	std::cout << "Loading " << sBuffer << std::endl;
+	texture = loadTexture(ren, sBuffer, nullptr);
+	if (! texture) {
+	  Log_Cerr("Failed to load %s\n", sBuffer+19);
+	}
+	Backgrounds[0] = texture;
+	
+	// append second substring
+	if (sSpace) {
+	  sBuffer[19] = '\0';
+	  String_strlcat(sBuffer, sSpace+1, _sBuffer_len);
+	  std::cout << "Loading " << sBuffer << std::endl;
+	  texture = loadTexture(ren, sBuffer, nullptr);
+	  if (! texture) {
+	  	Log_Cerr("Failed to load %s\n", sBuffer+19);
+	  }
+	  Backgrounds[1] = texture;
 	}
 	
 return true;
@@ -398,4 +380,24 @@ void placeTile(const Tile& tile, SDL_Surface* surTileset, uint16_t destNum, SDL_
 	
 	// copy tile to tilemap
 	SDL_BlitSurface(surTileset, &source, surTilemaps[uiLayer], &destination);
+}
+
+void renderBackground(SDL_Renderer* const ren, const SDL_Rect* camera) {
+  const _BackgroundLayer* bg = camera::getbglayers();
+	SDL_Rect dest = {0, 0, WIDTH, HEIGHT};
+	
+	// render backgrounds 0 & 1
+	for (int x = 0; x < 2; ++x) {
+	  if (Backgrounds[x]) {
+	  	const SDL_Rect& bgrect = bg->rect;
+	  	
+	  	dest.x = bgrect.x - camera->x;
+	  	dest.y = bgrect.y - camera->y;
+	  	
+	  	SDL_RenderCopy(ren, Backgrounds[x], nullptr, &dest);
+	  	dest.x += WIDTH;
+	  	SDL_RenderCopy(ren, Backgrounds[x], nullptr, &dest);
+	  }
+	  ++bg;
+	}
 }
