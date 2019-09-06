@@ -31,7 +31,7 @@ static const double _loops[3] = {0.0, 0.0, 3.2};
 
 static const float _bgmult[8] = {
 	0, 0, 0, 0,
-	0.15f, 0.1f, 0.9f, 1.0f
+	0.2f, 0.95f, 0, 0
 };
 
 const char* LevelInfo_Background(const unsigned int index) {

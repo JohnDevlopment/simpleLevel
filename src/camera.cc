@@ -34,7 +34,8 @@ float camera::CamYSpd = 0; // current y speed of the camera
 static StaticDArray<_BackgroundLayer, 2> _Layers;
 static CAMERA_SCROLL_DEF _Camera = CAMERA_NO_SCROLL;
 static float _CamFrac[] = {0, 0};
-static char _Offset = 0;
+static char _Offsetx = 0;
+static char _Offsety = 0;
 
 using namespace camera;
 using level::ThePlayer;
@@ -122,6 +123,8 @@ void camera::track() {
 	  // same as (spriteLoc.y + 34) > (cam.y + 320)
 	  if ((spriteLoc.y - 286) > cam.y) {
 	  	CamYSpd = LinearInterp(CamYSpd, 10, cam_delta2);
+	  	cam.y -= _Offsety;
+	  	_Offsety = 0;
 	  }
 	  // same as (spriteLoc.y + 36) < (cam.y + 160)
 	  else if ((spriteLoc.y - 126) < cam.y) {
@@ -140,8 +143,8 @@ void camera::track() {
 	  }
 	  else if (spriteLoc.x < (cam.x + 213)) {
 	  	_Camera = CAMERA_SCROLL_LEFT;
-	  	cam.x -= _Offset;
-	  	_Offset = 0;
+	  	cam.x -= _Offsetx;
+	  	_Offsetx = 0;
 	  }
 	}
 	
@@ -235,6 +238,14 @@ void camera::track() {
 	if (CamXSpd) {
 	  scrollx(CamXSpd);
 	  bgscrollx(_Layers[0], CamXSpd);
+	  bgscrollx(_Layers[1], CamXSpd);
+	}
+	
+	// scroll the camera along the y axis
+	if (CamYSpd) {
+	  scrolly(CamYSpd);
+	  bgscrolly(_Layers[0], CamYSpd);
+	  bgscrolly(_Layers[1], CamYSpd);
 	}
 }
 
@@ -265,7 +276,7 @@ void camera::scrollx(float speed) {
 	
 	if ((int) fTemp >= 0) {
 	  camera.x = CAM_LEVEL.w - WIDTH;
-	  _Offset = 1;
+	  _Offsetx = 1;
 	  fCamx = 0;
 	  CamXSpd = 0;
 	  _Camera = CAMERA_NO_SCROLL;
@@ -297,25 +308,35 @@ void camera::scrolly(float speed) {
 	SDL_Rect& camera = CAM_CAMERA;
 	
 	// y speed
-	fCamy += speed;
-	fCamy = std::modf(fCamy, &fTemp);
+	fCamy = std::modf(fCamy + speed, &fTemp);
 	camera.y += fTemp;
 	
 	/* If the camera goes outside the level's top boundry, put it back at 0
 	   (including its fraction value) and zero out its Y speed. */
 	if (camera.y < 0) {
-	  camera.y = fCamy = CamYSpd = 0;
+	  camera.y = 0;
+	  fCamy = CamYSpd = 0;
 	}
 	
 	/* check if the camera bottom edge has gone below the level boundary
 	   if it did, then offset the camera by that difference */
-	fTemp = (camera.y + csub(HEIGHT, 1)) - CAM_LEVEL.h;
+	fTemp = (camera.y + HEIGHT) - CAM_LEVEL.h;
 	if ((int) fTemp >= 0) {
 	  camera.y -= (int) fTemp;
 	  fCamy = CamYSpd = 0;
+	  _Offsety = 1;
 	}
 	
 	_CamFrac[1] = fCamy;
+}
+
+void camera::bgscrolly(_BackgroundLayer& layer, float speed) {
+	if (! speed || ! layer.ymult) return;
+	
+	float fTemp;
+	
+	layer.fy = std::modf(layer.fy + (speed * layer.ymult), &fTemp);
+	layer.rect.y += (int) fTemp;
 }
 
 const _BackgroundLayer* camera::getbglayers() {
