@@ -25,3 +25,9 @@ A command linked to C function _private_LevelCommand in tcl.cc. The next argumen
 **test**
 
 ``test`` does not do anything.
+
+## Examples
+
+    level background color 255 0 0
+    level background test
+    level test
