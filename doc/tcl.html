@@ -1,0 +1,47 @@
+<h1>Tcl Scripting Commands</h1>
+
+<h2>CallProc</h2>
+
+<p>A pure Tcl procedure that accepts one or more arguments. The first argument is the name of a procedure or command. The following arguments are forwared to the invoked procedure/command. Here is an example:</p>
+
+<pre><code>set id [CallProc open example.txt r]
+</code></pre>
+
+<h2>level</h2>
+
+<p>A command linked to C function _private_LevelCommand in tcl.cc. The next argument is one of the following:</p>
+
+<ul>
+<li>background</li>
+<li>test</li>
+</ul>
+
+<h3>background</h3>
+
+<p><code>background</code> is a subcommand for manipulating the background layers and color in the level. it has the following options:</p>
+
+<ul>
+<li>color</li>
+<li>test</li>
+</ul>
+
+<h4>color</h4>
+
+<p><code>color</code> changes the background color. It accepts three additional arguments: red, green, and blue. All three options are the red green and blue components of a color; each can be 0-255.</p>
+
+<h4>test</h4>
+
+<p><code>test</code> does not do anything.</p>
+
+<h2>Examples</h2>
+
+<pre><code>level background color 255 0 0
+level background test
+level test
+</code></pre>
+
+<h2>GetHash</h2>
+
+<p>A command linked to _private_GetHash. Here is the syntax: <code>GetHash str max offset</code>. The return value is a hash of the <em>str</em> argument, a value no larger than <em>max</em> but added to by <em>offset</em>.</p>
+
+<p>For levels, the hash parameters are: max=5000 offset=200.</p>

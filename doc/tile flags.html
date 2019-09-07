@@ -1,0 +1,23 @@
+<h1>Tile Bit Flags</h1>
+
+<p>Each tile has a set of bit flags, 16 in all:</p>
+
+<pre><code>0000 0000 0000 0000
+|||| |||| |||| ||||
+|||| |||| |||| |||=&gt; This bit indicates whether the tile is on the back (off) or front (on) tilemap
+|||| |||| |||| ||==&gt; This bit is on if the tile is a slope
+|||| |||| |||| |===&gt; UNUSED
+|||| |||| |||| ====&gt; This bit indicates that the slope is inverted
+|||| |||| ||||    |
+|||| |||| =========&gt; These bits are the table lookup for the slope
+|||| ||||         |
+|||| ||||==========&gt;
+|||| |||===========&gt;
+|||| ||============&gt;
+|||| |=============&gt;
+||||              |
+||||===============&gt;
+|||================&gt;
+||=================&gt;
+|==================&gt;
+</code></pre>

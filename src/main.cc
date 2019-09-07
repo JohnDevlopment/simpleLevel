@@ -196,10 +196,11 @@ int loadSDL() {
 
 	// log to file what the window`s dimensions are
 	{
-	  unique_ptr<int[]> vals(new int[4]);
+	  //unique_ptr<int[]> vals(new int[4]);
+	  int vals[4];
 	  
-	  SDL_GetWindowPosition(program.window, vals.get(), vals.get() + 1);
-	  SDL_GetWindowSize(program.window, vals.get() + 2, vals.get() + 3);
+	  SDL_GetWindowPosition(program.window, &vals[0], &vals[1]);
+	  SDL_GetWindowSize(program.window, &vals[2], &vals[3]);
 	  
 	  Log_Cout("Started video, audio, and timer subsystems\n");
 	  Log_Cout("Created window with title: \"%s\". Location: %d, %d. Size: %dx%d\n\n",
