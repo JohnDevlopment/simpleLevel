@@ -10,16 +10,19 @@ using namespace std;
 TexturePack** SpriteTXPackList = nullptr;
 
 void FreeTexturePacks() {
-	// free texture packs
-	for (int x = 0; x < 2; ++x) {
-	  TXPack_Free(SpriteTXPackList[x]);
+	if (SpriteTXPackList) {
+	  // free texture packs
+	  for (int x = 0; x < 2; ++x) {
+	  	if (SpriteTXPackList[x])
+	  	  TXPack_Free(SpriteTXPackList[x]);
+	  }
+	  
+	  // delete list of pointers
+	  delete[] SpriteTXPackList;
+	  
+	  // clear bit flag
+	  game::Flags.unset(TEXTURE_PACKS);
 	}
-	
-	// delete list of pointers
-	delete[] SpriteTXPackList;
-	
-	// clear bit flag
-	game::Flags.unset(TEXTURE_PACKS);
 }
 
 // public functions //

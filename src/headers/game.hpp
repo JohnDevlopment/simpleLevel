@@ -10,6 +10,7 @@
 #include "sdl_incs.h"
 #include "global_attributes.hpp"
 #include "program.hpp"
+#include "string.h"
 
 // game/library headers
 #include <levelLoad.hpp>
@@ -81,13 +82,16 @@ namespace game {
 	extern uint32_t			 KeySymBitsFirstFrame;
 	
 	// make a hash number for the string
-	unsigned long int makeHash(const char* str, int len, const int max);
+//	unsigned long int makeHash(const char* str, int len, const int max);
+//	#define HASHFUNC_H_DECLARATION
+//	#include "hashfunc.h"
+	unsigned long int makeHash(const char* str, int len, const int max, const int p);
 	
 	// unload background images
 	void unload_backgrounds();
 	
 	// loads image files, fonts, and allocates save data
-	bool loadMedia(SDL_Renderer*);
+	bool loadMedia(SDL_Renderer* ren);
 	
 	// loads a texture from file with an optional colorkey
 	SDL_Texture* loadTexture(SDL_Renderer* ren, const char* file, const uint32_t* key);

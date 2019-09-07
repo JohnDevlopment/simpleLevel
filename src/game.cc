@@ -1,6 +1,6 @@
 #include "game.hpp"
-#include "memory.hpp"
 #include "log.hpp"
+#include "memory.hpp"
 #include "string.h"
 
 // special defines
@@ -21,16 +21,10 @@ static SDL_Renderer* _private_renderer = nullptr;
 using namespace game;
 
 // public namespace member functions
-unsigned long int game::makeHash(const char* str, int len, const int max) {
-	unsigned long int retval = 0;
-	
-	len = (len >= 0) ? len : String_strlen(str);
-	for (int x = 0; x < len; ++x) {
-	  retval += static_cast<unsigned long int>(str[x] * (x + 1));
-	}
-	
-return retval % max;
-}
+/* Includes a header that defines game::makeHash. */
+#define HASHFUNC_H_IMPLEMENTATION 1
+#define HASHFUNC_H_NS game
+#include "hashfunc.h"
 
 SDL_Texture* game::loadTexture(SDL_Renderer* ren, const char* file, const uint32_t* key) {
 	SDL_Texture* tex = nullptr;
