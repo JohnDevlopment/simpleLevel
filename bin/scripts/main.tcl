@@ -29,8 +29,7 @@ proc CallProc {name args} {
 return $retval
 }
 
-CallProc level test
-CallProc level background
+# GetHash str max off
 
-set value [CallProc GetHash rt1-1.dat 5000 10]
-puts "Hash value for rt1-1.dat: $value"
+# level-specific code
+source "scripts/levels.tcl"
