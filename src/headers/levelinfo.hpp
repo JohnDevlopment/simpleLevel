@@ -16,5 +16,6 @@ const char*	LevelInfo_Sfx(unsigned int id);
 double		LevelInfo_MusicLoop(const size_t id);
 bool		LevelInfo_TexturePack(unsigned int value, TexurePackArgs& args);
 int		LevelInfo_MusicID(const std::string& str);
+const float*	LevelInfo_BGScrollSpeeds(const size_t id);
 
 #endif /* LEVELINFO_HPP */

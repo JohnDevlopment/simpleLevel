@@ -203,6 +203,9 @@ int _gm_level_init(GameMode* const gm, const PROGRAM& program) {
 	// correct the camera if it`s not over the player
 	camera::correctCamera();
 
+	// evaluate level scripts
+	Tcl_Eval(gInterp, "source scripts/levels.tcl");
+
 return 2;
 }
 

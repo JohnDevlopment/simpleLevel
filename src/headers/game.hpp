@@ -10,6 +10,7 @@
 #include "sdl_incs.h"
 #include "global_attributes.hpp"
 #include "program.hpp"
+#include "string.h"
 
 // game/library headers
 #include <levelLoad.hpp>
@@ -46,13 +47,8 @@ enum {
 
 // parts of the array game::Graphics
 #define BG_BLACK		game::Graphics[0]
-#define BG_BG1			game::Graphics[1]
-#define BG_BG2			game::Graphics[2]
-#define BG_DIALOGUEBOX		game::Graphics[3]
-#define BG_BACKUP1		game::Graphics[4]
-#define BG_BACKUP2		game::Graphics[5]
-#define NUM_IMAGES		6
-#define NUM_BGS			2
+#define BG_DIALOGUEBOX		game::Graphics[1]
+#define NUM_IMAGES		2
 
 // other macros
 #define right_edge(rect)	(rect.x + rect.w)
@@ -79,18 +75,23 @@ namespace game {
 	extern Image*			 Graphics;
 	extern generic_class<BitmapFont> Bitmap;
 	extern Bitfield<uint16_t>	 Flags;
-	
-	// integer types
 	extern uint8_t			 FrameCounter;
 	extern uint32_t			 MiscTimer;
 	extern uint32_t*		 SaveData; // dynamic array: currently holds 3
 	extern uint32_t			 KeySymBits;
 	extern uint32_t			 KeySymBitsFirstFrame;
 	
+	// make a hash number for the string
+//	unsigned long int makeHash(const char* str, int len, const int max);
+//	#define HASHFUNC_H_DECLARATION
+//	#include "hashfunc.h"
+	unsigned long int makeHash(const char* str, int len, const int max, const int p);
+	
+	// unload background images
 	void unload_backgrounds();
 	
 	// loads image files, fonts, and allocates save data
-	bool loadMedia(SDL_Renderer*);
+	bool loadMedia(SDL_Renderer* ren);
 	
 	// loads a texture from file with an optional colorkey
 	SDL_Texture* loadTexture(SDL_Renderer* ren, const char* file, const uint32_t* key);
@@ -129,5 +130,8 @@ Point<int>& operator>>(Point<int>&, SDL_Rect& rect);
 
 // insert a rectangle's X & Y values into Point<int>
 Point<int>& operator<<(Point<int>& point, SDL_Rect& rect);
+
+// subtract two rectangles
+SDL_Rect operator-(const SDL_Rect& A, const SDL_Rect& B);
 
 #endif /* GAME_HPP */

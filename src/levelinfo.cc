@@ -21,12 +21,18 @@ constexpr str_const _music_files[NUMBER_VALID_SONGS+1] = {
 	"planning_partA.ogg"
 };
 
-constexpr str_const _bg_files[2] = {
-	"clear_sky.png",
+constexpr str_const _bg_files[3] = {
+	"...",
+	"clear_sky.png trees.png",
 	"grassy_field.png"
 };
 
 static const double _loops[3] = {0.0, 0.0, 3.2};
+
+static const float _bgmult[8] = {
+	0, 0, 0, 0,
+	0.2f, 0.95f, 0, 0
+};
 
 const char* LevelInfo_Background(const unsigned int index) {
 	assert(index < 2);
@@ -123,4 +129,10 @@ double LevelInfo_MusicLoop(const size_t id) {
 	assert(id < 3);
 	
 return _loops[id];
+}
+
+const float* LevelInfo_BGScrollSpeeds(const size_t id) {
+	assert(id < 4);
+	
+return reinterpret_cast<const float*>(_bgmult + (id * 4));
 }

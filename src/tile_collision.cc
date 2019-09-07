@@ -38,9 +38,11 @@ static Point<int> TilePoint;
 #define Tile000 EmptyTile
 #define Tile001 Ledge
 #define Tile024 SlopeJoint
+#define Tile027 LeftWall
+#define Tile028 RightWall
 
 // pointers to said functions
-typedef int (*TileFunction)(SDL_Rect* loc, SDL_Rect* col, const ENTRY_POINT entry);
+typedef int (*TileFunction)(SDL_Rect* loc, SDL_Rect* col, int speed, const ENTRY_POINT entry);
 
 constexpr TileFunction _funcs[NUMBER_OF_CODED_TILES] = {
 	Tile000, Tile001, Tile000, Tile000,
@@ -49,8 +51,8 @@ constexpr TileFunction _funcs[NUMBER_OF_CODED_TILES] = {
 	Tile000, Tile000, Tile000, Tile000,
 	Tile000, Tile000, Tile000, Tile000,
 	Tile000, Tile000, Tile000, Tile000,
-	Tile024, Tile000, Tile000, Tile000,
-	Tile000, Tile000, Tile000, Tile000,
+	Tile024, Tile000, Tile000, Tile027,
+	Tile028, Tile000, Tile000, Tile000,
 	Tile000, Tile000, Tile000, Tile000,
 	Tile000, Tile000, Tile000, Tile000,
 	Tile000, Tile000, Tile000, Tile000,
@@ -64,9 +66,9 @@ INLINE uint16_t GetTile2(const Point<int>& xy) {
 	return GetTile(xy.x(), xy.y());
 }
 
-INLINE uint16_t GetTile3(const SDL_Rect& rect) {
+/* INLINE uint16_t GetTile3(const SDL_Rect& rect) {
 	return GetTile(rect.x, rect.y);
-}
+} */
 
 INLINE void TileLocationInPoint(Point<int>& point, const Point<int>& ref) {
 	point[0] = ref.x() - (ref.x() % TILE_WIDTH);
@@ -74,76 +76,73 @@ INLINE void TileLocationInPoint(Point<int>& point, const Point<int>& ref) {
 }
 
 // public functions //
-void TileLocationInRect(SDL_Rect& rect, int x, int y) {
-	rect.x = x - (x % TILE_WIDTH);
-	rect.y = y - (y % TILE_HEIGHT);
-}
+//void TileLocationInRect(SDL_Rect& rect, int x, int y) {
+//	rect.x = x - (x % TILE_WIDTH);
+//	rect.y = y - (y % TILE_HEIGHT);
+//}
 
-bool IntersectPointAndTile(const Point<int>& point, int pw, int ph, int x, int y, SDL_Rect& result) {
-	SDL_Rect A = {point.x(), point.y(), pw, ph};
-	SDL_Rect B = {x, y, TILE_WIDTH, TILE_HEIGHT};
-	
-return (bool) SDL_IntersectRect( &A, &B, &result );
-}
+//bool IntersectPointAndTile(const Point<int>& point, int pw, int ph, int x, int y, SDL_Rect& result) {
+//	SDL_Rect A = {point.x(), point.y(), pw, ph};
+//	SDL_Rect B = {x, y, TILE_WIDTH, TILE_HEIGHT};
+//	
+//return (bool) SDL_IntersectRect( &A, &B, &result );
+//}
 
 int SpriteTileCollision_LeftRight(SDL_Rect* loc, SDL_Rect& collbox, int steps) {
 	using level::Tiles;
 	
+	Tile* curTile;
 	uint8_t uiFlags = 0;
-	Point<int> myPoint;
-	int iDiff;
-	Tile tile;
 	
-	// left side
-	myPoint[0] = collbox.x;
-	myPoint[1] = collbox.y + static_cast<int>(0.75f * collbox.h);
-	
-	tile = Tiles[GetTile2(myPoint)];
-	if ( TILEFLAG_IsSolid(tile) ) {
-	  iDiff = TILE_WIDTH - (myPoint.x() % TILE_WIDTH);
-	  loc->x += iDiff;
-	  collbox.x += iDiff;
+	// tile to the left then the right
+	for (short int x = 0; x < 2; ++x) {
+	  Point<int> collpoint(collbox.x + collbox.w * x, collbox.y + collbox.h / 2);
+	  
+	  curTile = &Tiles[GetTile2(collpoint)];
+	  if ( TILEFLAG_IsSolid(*curTile) ) {
+	  	uiFlags = _funcs[curTile->codeID](loc, &collbox, steps, (ENTRY_POINT) (ENTRY_PLAYER_LEFT + x));
+	  }
 	}
 	
 return static_cast<int>(uiFlags);
 }
 
-int SpriteTileCollisionOneStep(SDL_Rect* loc, SDL_Rect& collbox, int steps) {
+int PlayerTileCollisionUpDown(SDL_Rect* loc, SDL_Rect& collbox, int steps) {
 	using level::Tiles;
-//	using level::TileLocations;
 	
-	uint8_t uiFlags = 0;
+	// 15 bytes
 	Tile* curTile;
-	
-	// tile underneath the sprite
-{
-	const int iHw = collbox.w / 2;
-	Point<int> collbotm_left(collbox.x + iHw / 2, collbox.y + collbox.h);
+  const int iHw = collbox.w / 2;
+  const int iBot = collbox.y + collbox.h;
 	uint16_t uiTile1, uiTile2;
+	uint8_t uiFlags = 0;
 	
-	uiTile1 = GetTile2(collbotm_left);
-	uiTile2 = GetTile(collbox.x + iHw * 1.5f, collbotm_left.y());
+{
+	// tile underneath the sprite
+	uiTile1 = GetTile(collbox.x + iHw / 2, iBot);
+	uiTile2 = GetTile(collbox.x + iHw * 1.5f, iBot);
 	
 	// select tile underneath the left point
 	curTile = &Tiles[uiTile1];
 	if (TILEFLAG_IsSolid(*curTile)) {
-	  uiFlags = _funcs[curTile->codeID](loc, &collbox, ENTRY_PLAYER_DOWN);
+	  uiFlags = _funcs[curTile->codeID](loc, &collbox, steps, ENTRY_PLAYER_DOWN);
 	}
 	
 	// select tile underneath the right point
-	curTile = &Tiles[uiTile2];
-	if (TILEFLAG_IsSolid(*curTile) && uiTile1 != uiTile2) {
-	  uiFlags |= _funcs[curTile->codeID](loc, &collbox, ENTRY_PLAYER_DOWN);
+	if (uiTile1 != uiTile2) {
+	  ++curTile;
+	  if (TILEFLAG_IsSolid(*curTile))
+	  	uiFlags = _funcs[curTile->codeID](loc, &collbox, steps, ENTRY_PLAYER_DOWN);
 	}
 }
 	
-	// tile above the sprite
 {
-	Point<int> colltop(collbox.x + collbox.w / 2, collbox.y);
+	// tile above the sprite
+	uiTile1 = GetTile(collbox.x + iHw, collbox.y);
 	
-	curTile = &Tiles[GetTile2(colltop)];
+	curTile = &Tiles[uiTile1];
 	if (TILEFLAG_IsSolid(*curTile)) {
-	  uiFlags = _funcs[curTile->codeID](loc, &collbox, ENTRY_PLAYER_UP);
+	  uiFlags = _funcs[curTile->codeID](loc, &collbox, steps, ENTRY_PLAYER_UP);
 	}
 }
 	

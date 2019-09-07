@@ -1,6 +1,7 @@
 #include "game.hpp"
-#include "memory.hpp"
 #include "log.hpp"
+#include "memory.hpp"
+#include "string.h"
 
 // special defines
 #define NumberOfSaveBytes	3
@@ -20,6 +21,11 @@ static SDL_Renderer* _private_renderer = nullptr;
 using namespace game;
 
 // public namespace member functions
+/* Includes a header that defines game::makeHash. */
+#define HASHFUNC_H_IMPLEMENTATION 1
+#define HASHFUNC_H_NS game
+#include "hashfunc.h"
+
 SDL_Texture* game::loadTexture(SDL_Renderer* ren, const char* file, const uint32_t* key) {
 	SDL_Texture* tex = nullptr;
 	SDL_Surface* suf;
@@ -80,8 +86,8 @@ bool game::loadMedia(SDL_Renderer* ren) {
 	}
 	
 	// allocate an array of integers that represent the game's save data
-	if (! alloc_mem(SaveData, NumberOfSaveBytes))
-	  return false;
+//	if (! alloc_mem(SaveData, NumberOfSaveBytes))
+//	  return false;
 	
 	// open an image file and build a font off of it
 //	if (Bitmap->open(ren, "images/fonts/dialogue/dialogue.png", 0xffffffff))
@@ -127,4 +133,10 @@ Point<int>& operator>>(Point<int>& point, SDL_Rect& rect) {
 	rect.y = point.y();
 	
 return point;
+}
+
+SDL_Rect operator-(const SDL_Rect& A, const SDL_Rect& B) {
+	SDL_Rect C = {A.x - B.x, A.y - B.y, A.w - B.w, A.h - B.h};
+	
+return C;
 }

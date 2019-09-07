@@ -16,10 +16,12 @@
   #warning __has_include is not supported
 #endif*/ /* HAS_CCTYPE */
 
+#define String_memset	std::memset
 #define String_strlcat	SDL_strlcat
 #define String_strlcpy	SDL_strlcpy
-#define String_strchr	SDL_strchr
-#define String_strlen	SDL_strlen
+#define String_strcpy	std::strcpy
+#define String_strchr	std::strchr
+#define String_strlen	std::strlen
 
 // returns how many of <findchar> are inside the string <str>
 size_t String_CharCount(const char* str, int findchar);
