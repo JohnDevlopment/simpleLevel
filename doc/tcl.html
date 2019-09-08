@@ -2,7 +2,7 @@
 
 <h2>CallProc</h2>
 
-<p>A pure Tcl procedure that accepts one or more arguments. The first argument is the name of a procedure or command. The following arguments are forwared to the invoked procedure/command. Here is an example:</p>
+<p>A pure Tcl procedure that accepts one or more arguments. The first argument is the name of a procedure or command. The following arguments are forwarded to the invoked procedure/command. Here is an example:</p>
 
 <pre><code>set id [CallProc open example.txt r]
 </code></pre>
@@ -13,7 +13,6 @@
 
 <ul>
 <li>background</li>
-<li>test</li>
 </ul>
 
 <h3>background</h3>
@@ -22,22 +21,21 @@
 
 <ul>
 <li>color</li>
-<li>test</li>
+<li>offsety</li>
 </ul>
 
 <h4>color</h4>
 
-<p><code>color</code> changes the background color. It accepts three additional arguments: red, green, and blue. All three options are the red green and blue components of a color; each can be 0-255.</p>
+<p><code>color</code> changes the background color. Its syntax is as follows: <code>level background color red green blue</code>. The red, green and blue values can be from 0 to 255. The alpha channel is 255 by default.</p>
 
-<h4>test</h4>
+<h4>offsety</h4>
 
-<p><code>test</code> does not do anything.</p>
+<p><code>offsety</code> changes the Y position of the selected background layer. Its syntax is as follows: <code>level background offsety bgnum value</code>. <em>bgnum</em> is a lookup into an array where the XY positions of the background layers are kept. <em>value</em> is just an integer that gets added to the selected background layer's Y position.</p>
 
 <h2>Examples</h2>
 
 <pre><code>level background color 255 0 0
-level background test
-level test
+level background offsety 1 352
 </code></pre>
 
 <h2>GetHash</h2>

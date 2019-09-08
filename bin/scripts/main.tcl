@@ -30,6 +30,5 @@ return $retval
 }
 
 # GetHash str max off
-
-# level-specific code
-source "scripts/levels.tcl"
+# level background color red green blue
+# level background offsety bgnum value

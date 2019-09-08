@@ -1,12 +1,12 @@
 #include "game.hpp"
 #include "gm_levelInit.hpp"
 #include "levelcode.hpp"
-#include "tile_collision.hpp"
+#include "log.hpp"
 #include "sound.hpp"
 #include "tcl.hpp"
 #include "texture_packs.hpp"
+#include "tile_collision.hpp"
 #include "triggers.hpp"
-#include "log.hpp"
 
 using namespace std;
 

@@ -24,7 +24,6 @@ typedef int (*TclCC_ProcSubFunc)(ClientData, Tcl_Interp*, int, Tcl_Obj* const*);
 Tcl_Interp* gInterp = nullptr;
 
 // private globals //
-static bool* _HashValues = nullptr;
 
 // private functions //
 static int _private_GetHash(ClientData cd, Tcl_Interp* interp, int objc, Tcl_Obj* const objv[]) {
@@ -73,7 +72,7 @@ static int _private_LevelBackground(ClientData cd, Tcl_Interp* interp, int objc,
 	int iAnInt;
 	Tcl_Obj* result = nullptr;
 	const char* sBuffer = nullptr;
-	JColor color;
+	const _BackgroundLayer* layers = camera::getbglayers();
 	
 	if (! objc) {
 	  TclCC_SetErrorResult(interp, "to few arguments to level background: should be include one of: color, test", -1);
@@ -92,7 +91,8 @@ static int _private_LevelBackground(ClientData cd, Tcl_Interp* interp, int objc,
 	  
 	  // "color"
 	  case 0x000000000000022F:
-	  	// argument count is wrong
+	  	JColor color;
+	  	
 	  	if (objc != 4) {
 	  	  TclCC_SetErrorResult(interp, "wrong # args: should be level background color red green blue", -1);
 	  	  iAnInt = -1;
@@ -128,6 +128,33 @@ static int _private_LevelBackground(ClientData cd, Tcl_Interp* interp, int objc,
 	  	
 	  	// change background color
 	  	game::bgcolor(color);
+	  	break;
+	  
+	  // "offsety"
+	  case 0x00000000000005F9:
+	  	if (objc != 3) {
+	  	  TclCC_SetErrorResult(interp, "wrong # args: should be level background offsety bgnum value", 60);
+	  	  iAnInt = -1;
+	  	  break;
+	  	}
+	  	
+	  	// bgnum
+	  	if ( Tcl_GetIntFromObj(interp, objv[1], &iAnInt) == TCL_ERROR ) {
+	  	  result = Tcl_ObjPrintf("failed to fetch integer argument 1: %s",
+	  	                         Tcl_GetStringResult(interp));
+	  	  iAnInt = -1;
+	  	  break;
+	  	}
+	  	if (iAnInt) layers += iAnInt;
+	  	
+	  	// value
+	  	if ( Tcl_GetIntFromObj(interp, objv[2], &iAnInt) == TCL_ERROR ) {
+	  	  result = Tcl_ObjPrintf("failed to fetch integer argument 2: %s",
+	  	                         Tcl_GetStringResult(interp));
+	  	  iAnInt = -1;
+	  	  break;
+	  	}
+	  	const_cast<_BackgroundLayer*>(layers)->rect.y += iAnInt;
 	  	break;
 	  
 	  // "test"
@@ -254,17 +281,12 @@ int TclCC_Init(PROGRAM* const program) {
 	  return TCL_ERROR;
 	}
 	
-	// initialize hash table
-	_HashValues = new bool[MAX_NUM_HASHES];
-	String_memset(_HashValues, 0, sizeof(bool) * MAX_NUM_HASHES);
-	
 	Log_Cout("Tcl variable CurrentLevel linked to C variable\nTcl initialized\n\n");
 	
 return TCL_OK;
 }
 
 void TclCC_Quit() {
-	delete[] _HashValues;
 	Tcl_UnlinkVar(gInterp, "CurrentLevel");
 	Tcl_Free(level::CurrentLevel);
 	Tcl_DeleteInterp(gInterp);
