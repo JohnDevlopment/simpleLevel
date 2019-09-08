@@ -16,9 +16,9 @@ constexpr str_const _sfx_syms[NUMBER_GLOBAL_SFX] = {
 
 constexpr str_const _music_files[NUMBER_VALID_SONGS+1] = {
 	"...",
+	"planning_partA.ogg",
 	"death.wav",
-	"gogo.ogg",
-	"planning_partA.ogg"
+	"gogo.ogg"
 };
 
 constexpr str_const _bg_files[3] = {
@@ -27,7 +27,7 @@ constexpr str_const _bg_files[3] = {
 	"grassy_field.png"
 };
 
-static const double _loops[3] = {0.0, 0.0, 3.2};
+static const double _loops[3] = {3.2, 0.0, 0.0};
 
 static const float _bgmult[8] = {
 	0, 0, 0, 0,
