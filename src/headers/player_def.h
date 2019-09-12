@@ -1,7 +1,7 @@
 #ifndef PLAYER_DEF_H_INCLUDED
 #define PLAYER_DEF_H_INCLUDED
 
-#include "sprite_def.h"
+#include "pdobject.h"
 #include "sdl_incs.h"
 #include "tmath.hpp"
 #include "game.hpp"

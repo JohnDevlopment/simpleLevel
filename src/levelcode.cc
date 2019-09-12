@@ -25,7 +25,7 @@
 #include "levelinfo.hpp"
 #include "log.hpp"
 #include "math.hpp"
-#include "particle_sprite_def.h"
+#include "particle_pdobject.h"
 #include "sound.hpp"
 #include "string.h"
 #include "tcl.hpp"
