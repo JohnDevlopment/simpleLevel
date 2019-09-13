@@ -1,29 +1,14 @@
 #ifndef GAMEMODE_HPP
 #define GAMEMODE_HPP
 
-// standard includes
 #include "stdinc.h"
-
-// definition of GameMode
 #include "gamemode_def.hpp"
-
-// bad_option exception class
-#include <custom/bad_option>
-
-// Image class
-#include <custom/image_class.hpp>
-
-// program structure
 #include "program.hpp"
-
-// function attributes
 #include "global_attributes.hpp"
-
-// event triggers
 #include "triggers.hpp"
-
-// sound api
 #include "sound.hpp"
+#include <bad_option>
+#include <image_class.hpp>
 
 #define NUMBER_OF_GAMEMODES		5
 
@@ -68,6 +53,12 @@ template<>
 inline void GM_SetData<SDL_Renderer>(GameMode* gm, SDL_Renderer* ptr) {
 	gm->data = ptr;
 	gm->type = MEMBER_DATA_RENDERER;
+}
+
+template<>
+inline void GM_SetData<SDL_Texture>(GameMode* gm, SDL_Texture* ptr) {
+	gm->data = ptr;
+	gm->type = MEMBER_DATA_TEXTURE;
 }
 
 template<>

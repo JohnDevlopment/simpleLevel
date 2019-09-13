@@ -28,6 +28,9 @@
 // ...
 #define NUM_SLOPES                 4
 
+// hash values of 
+#define RT1D1_DAT                  0x0000000000000414
+
 // custom bit flags for each tile
 #define TILEFLAG_LAYER             0x0001
 #define TILEFLAG_SLOPE             0x0002
