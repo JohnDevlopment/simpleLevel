@@ -267,24 +267,22 @@ int Sprite000::AttackState() {
 	if (iTimer == _const_attk_tm[2]) {
 	  set_hitbox();
 	}
-	// collision active during this timeframe
-	else if (iTimer < _const_attk_tm[2]) {
-	  SDL_Rect* intersection = memblk(game::HeapStack, SDL_Rect, (int) HS_CollRect);
-	  
-	  if ( PlayerSpriteColl(m_hitbox, intersection) ) {
-	  	bool ishurt = (bool) ThePlayer->Hurt();
-	  	
-	  	// player isn`t hurt
-	  	if (ishurt) {
-	  	  const float iLaunchSpeeds[] = {-20.0f, 20.0f};
-	  	  ThePlayer->m_obj.launch_xspeed(iLaunchSpeeds[(int) m_gfx.horz_direction()]);
-	  	}
-	  	
-	  	m_timer = 0;
-//	  	change_state(1);
-//	  	set_hitbox();
-	  }
-	}
+//	// collision active during this timeframe
+//	else if (iTimer < _const_attk_tm[2]) {
+//	  SDL_Rect* intersection = memblk(game::HeapStack, SDL_Rect, (int) HS_CollRect);
+//	  
+//	  if ( PlayerSpriteColl(m_hitbox, intersection) ) {
+//	  	bool ishurt = (bool) ThePlayer->Hurt();
+//	  	
+//	  	// player isn`t hurt
+//	  	if (ishurt) {
+//	  	  const float iLaunchSpeeds[] = {-20.0f, 20.0f};
+//	  	  ThePlayer->m_obj.launch_xspeed(iLaunchSpeeds[(int) m_gfx.horz_direction()]);
+//	  	}
+//	  	
+//	  	m_timer = 0;
+//	  }
+//	}
 	
 return 0;
 }
