@@ -1,0 +1,26 @@
+### Initializing Tcl ###
+Tcl variable CurrentLevel linked to C variable
+Tcl initialized
+
+### Initializing SDL Library ###
+Started video, audio, and timer subsystems
+Created window with title: "Project Dewpsi Development". Location: 320, 120. Size: 640x480
+
+### Loading Global Media ###
+Loaded black.bmp: width = 50, height = 50. Texture will blit at 640x480 and have alpha blending
+Loaded dbox.png: width = 632, height = 152
+Allocated 3 bytes of potential save data
+Initialized global game resources
+
+### Allocating Texture Packs ###
+Allocated texture packs: 0 = 0xa08e980, 1 = 0x0
+### Initializing Sound System ###
+Opened audio device: frequency = 22050, stereo audio, 1024 samples per chunk
+Audio device is based on 16-bit signed integer data in big-endian byte order
+Initialized Ogg and WAV decoders
+Allocated 4 channels for mixing; milliseconds per "step" = 46
+Opened audio/sound_effects/sfx.so...reading symbols
+Loaded 5 sound effects to the global array
+Initialized Sound system and set the appropriate flag
+
+Initialization stage complete...now entering main loop

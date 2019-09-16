@@ -1,0 +1,2 @@
+spriteslots.o
+sprites.o

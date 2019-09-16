@@ -1,0 +1,3 @@
+sound_music_fmt.o
+sound_ogg.o
+sound_wavstream.o
