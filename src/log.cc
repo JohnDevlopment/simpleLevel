@@ -159,3 +159,17 @@ void Log_Cerr(string str, ...) {
 	// flush output in case it was buffered
 	ofs_err.flush();
 }
+
+void _Log_Assert(const bool expr, const char* msg, const char* func, const char* file, unsigned int line)
+{
+#ifndef NDEBUG
+	if (! expr) {
+//	  stringstream ss;
+	  
+	  cerr << "Assertion failed in function " << func << " on line " << line \
+	  << " in " << file << "\nmessage: " << msg << '\n';
+	  
+	  abort();
+	}
+#endif
+}

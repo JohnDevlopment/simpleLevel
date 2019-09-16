@@ -31,6 +31,7 @@ namespace camera {
 	void scrollx(float speed);
 	void bgscrollx(_BackgroundLayer& layer, float speed);
 	void scrolly(float speed);
+	void bgscrolly(_BackgroundLayer& layer, float speed);
 	void correctCamera();
 	const _BackgroundLayer* getbglayers();
 }

@@ -10,7 +10,7 @@
 // memory functions
 #include <memory>
 
-#define memblk(ptr,type,off)	reinterpret_cast<type*>(ptr + off)
+#define memblk(type, ptr, off)	reinterpret_cast<type*>(ptr + off)
 
 // allocate an array memory
 template<class T>
