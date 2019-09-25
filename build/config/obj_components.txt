@@ -1,0 +1,2 @@
+pdcomponent.o
+pdobject.o

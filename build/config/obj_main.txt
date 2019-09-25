@@ -12,16 +12,11 @@ levelcode.o
 levelinfo.o
 locks.o
 math.o
-particle_sprite.o
-player.o
 res.o
 sound.o
-sprite_helpers.o
-sprite_router.o
 string.o
 tcl.o
 texture_packs.o
 threads.o
-tile_collision.o
 triggers.o
 tt_fonts.o
