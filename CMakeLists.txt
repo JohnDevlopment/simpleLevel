@@ -20,14 +20,10 @@ include (ConfigDefines)
 # set requirements for executable #
 
 # read list from obj_main.txt
-readobjfile (${PROJECT_ROOT_DIR}/build/config/obj_main.txt SOURCE_FILES
-             PREFIX ${PROJECT_ROOT_DIR}/src
-            )
+readobjfile (${PROJECT_ROOT_DIR}/build/config/obj_main.txt SOURCE_FILES PREFIX ${PROJECT_ROOT_DIR}/src)
 
 # read list from obj_sound.txt
-readobjfile (${PROJECT_ROOT_DIR}/build/config/obj_sound.txt temp
-             PREFIX ${PROJECT_ROOT_DIR}/src/sound
-            )
+readobjfile (${PROJECT_ROOT_DIR}/build/config/obj_sound.txt temp PREFIX ${PROJECT_ROOT_DIR}/src/sound)
 string (APPEND SOURCE_FILES ";${temp}")
 
 # read list from obj_components.txt
