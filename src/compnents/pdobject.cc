@@ -1,8 +1,9 @@
 #include "pdobject.h"
+#include "log.hpp"
 
 int PDObject::s_objectIDCounter = 0;
 
-PDObject::PDObject(PDObjectType type) : m_components(), m_type(type), m_id(++s_objectIDCounter), m_pos(0, 0)
+PDObject::PDObject(PDObjectType type) : m_components(), m_type(type), m_id(++s_objectIDCounter), m_pos(0, 0),
                    m_vel(0, 0), m_isDead(false)
 {
 	m_components.reserve(START_SIZE);
@@ -16,15 +17,15 @@ PDObject::~PDObject()
 void PDObject::Update(float dt) {
 	/* Call Update() in each component, unless that component is dead, in which case
 	delete it from memory and remove it from the vector. */
-	for (int i = 0; i < m_components.size(); ++x) {
+	for (int i = 0; i < m_components.size(); ++i) {
 	  if (m_components[i]->m_isDead) {
 	  	delete m_components[i];
 	  	m_components[i] = m_components[m_components.size()-1];
 	  	m_components.pop_back();
 	  }
-	  else {
-	  	m_components[i]->Update(dt);
-	  }
+//	  else {
+//	  	m_components[i]->Update(dt);
+//	  }
 	}
 	
 	// update position of the object
@@ -81,6 +82,7 @@ void PDObject::RemoveAllComponents(PDComponentType type) {
 
 PDObject* PDObject::Clone() const {
 	PDObject* clone = new PDObject(m_type);
+	
 	// copy internal data
 	clone->m_pos = m_pos;
 	clone->m_vel = m_vel;

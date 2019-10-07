@@ -1,79 +1,31 @@
-#ifndef SPRITE_DEF_H_INCLUDED
-#define SPRITE_DEF_H_INCLUDED
+#ifndef PDOBJECT_H_INCLUDED
+#define PDOBJECT_H_INCLUDED
 
-#include <pointvector>
-#include <vector>
-#include <algorithm>
+// engine headers
 #include "stdinc.h"
 #include "sdl_incs.h"
+#include "pdcomponent.h" // pdcomponent.h => pdcomponenttype.h
+#include "pdobjecttype.h"
+
+// other headers
+#include <vector>
+#include <algorithm>
+#include "pointvector"
 
 #define GRAVITY_SPEED	8
 
 #define START_SIZE	5
 
-// enumerations for which bits are for which blocked status
-enum {
-	M_COLL_UP    = 0x08,
-	M_COLL_DOWN  = 0x04,
-	M_COLL_LEFT  = 0x02,
-	M_COLL_RIGHT = 0x01
-};
-
-// type of object
-enum PDObjectType {
-	PDONull,
-	PDOEnemy,
-	PDOBullet,
-	PDOTrigger,
-	PDOExit,
-	PDOPlayer
-};
-
-// type of component
-enum PDComponentType {
-	PDCNull,
-	PDCGfx,
-	PDCCollider,
-	PDCActions
-};
-
-/* Component */
-class PDObject;
-
-class PDComponent {
-	int m_id;
-	PDComponentType m_type;
-	
-	
-	static int s_compIdCounter;
-	
-	protected:
-	
-	PDObject* m_parent;
-	
-	public:
-	
-	bool m_isDead;
-	
-	PDComponent(PDComponentType type);
-	virtual ~PDComponent();
-	
-	// set the object that this component belongs to
-	void SetParent(PDObject* obj) {
-		m_parent = obj;
-	}
-	
-	// type of component
-	PDComponentType GetType() const {return m_type}
-};
-
 /* Defines an object. It holds a variable number of pointers to
    components. Update() calls the Update() method for each active
    component. An object has its own position and speed. */
 class PDObject {
+	// vector of components
 	typedef std::vector<PDComponent*> CompVect;
+	
+	// iterator and constant iterator of the vector of components
 	typedef CompVect::iterator CompVectItr;
-	typedef CompVect::const_iterator CompVectConstItr
+	typedef CompVect::const_iterator CompVectConstItr;
 	
 	CompVect m_components;
 	PDObjectType m_type;
@@ -133,4 +85,4 @@ template<typename T> void PDObject::GetAllComponents(PDComponentType type, std::
 	}
 }
 
-#endif /* SPRITE_DEF_H_INCLUDED */
+#endif /* PDOBJECT_H_INCLUDED */
