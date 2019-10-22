@@ -1,12 +1,16 @@
+// engine headers
 #include "gamemode.hpp"
 #include "game.hpp"
+#include "textures.h"
+#include "log.hpp"
+#include "pdresourcemanager.hpp"
+
+// other headers
 #include "math.hpp"
-
-// defines operator "new" and its options, like std::nothrow
 #include <new>
-
-// standard exceptions
 #include <stdexcept>
+#include "memory.hpp"
+#include "lvalue_rvalue_pointers.hpp"
 
 // gamemode headers
 #include "gm_splash.hpp"
@@ -19,6 +23,9 @@ using namespace std;
 // keeps track of the allocated GameMode pointer
 static GameMode* GM_FreeLater = nullptr;
 
+// texture of a black screen
+static PDTexture* GM_BlackScreen = nullptr;
+
 GameMode* GM_GetPointer() {
 	return GM_FreeLater;
 }
@@ -29,8 +36,8 @@ void GM_Main(GameMode* const gm, const PROGRAM& program, int& ret) {
 	static const GameMode_Function functions[NUMBER_OF_GAMEMODES] = {
 	  gm_splash_screen,
 	  gm_menu,
-	  gm_levelInit,
-	  gm_level,
+	  nullptr,
+	  nullptr,
 	  nullptr
 	};
 	
@@ -40,17 +47,18 @@ void GM_Main(GameMode* const gm, const PROGRAM& program, int& ret) {
 	
 	// fade to black if the most significant bit is set
 	if (Flags.mask(FADEOUT)) {
-	  if (fade_to_black(5) == 255)
+	  if (fade_to_black(6) == 255)
 	  	Flags.unset(FADEOUT);
 	}
 	
 	// fade from black if bit 6 is set
 	else if (Flags.mask(FADEIN)) {
-	  if (fade_from_black(5) == 0)
+	  if (fade_from_black(6) == 0)
 	  	Flags.unset(FADEIN);
 	}
 	
 	// execute gamemode function
+	Log_Assert(functions[gm->gm_cur] != nullptr, "Current gamemode function is NULL");
 	ret |= functions[gm->gm_cur](gm, program);
 	
 	// decrement timer until it reaches zero
@@ -64,7 +72,7 @@ void GM_Free() {
 }
 
 GameMode* GM_NewObj() {
-	GameMode* ret_ptr = nullptr;
+	GameMode* ret_ptr;
 	
 	// if the pointer was already allocated, return
 	if (GM_FreeLater) {
@@ -91,20 +99,21 @@ GameMode* GM_NewObj() {
 return ret_ptr;
 }
 
+/* Increases or decreases the alpha value of the black screen. */
 uint8_t fade_to_or_from_black(uint8_t rate, bool increment) {
-	// current alpha value
-	uint8_t alpha = BG_BLACK.get_alpha();
+	if (! GM_BlackScreen) {
+	  GM_BlackScreen = get_pointer( RManager.LoadTexture(FADER, "images/ui/black.bmp", nullptr) );
+	}
 	
-	// increment alpha value to a cap of 255
+	uint8_t uiAlpha = GM_BlackScreen->GetAlpha();
+	
+	// increase or decrease alpha value
 	if (increment)
-	  alpha = Inc(alpha, rate, 255);
-	
-	// decrement alpha value to zero
+	  uiAlpha = Inc(uiAlpha, rate, 255);
 	else
-	  alpha = Dec(alpha, rate);
+	  uiAlpha = Dec(uiAlpha, rate);
 	
-	// set new alpha value
-	BG_BLACK.set_alpha(alpha);
+	GM_BlackScreen->SetAlpha(uiAlpha);
 	
-return alpha;
+return uiAlpha;
 }

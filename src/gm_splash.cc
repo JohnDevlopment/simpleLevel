@@ -1,46 +1,48 @@
+// engine headers
 #include "game.hpp"
 #include "gm_splash.hpp"
-#include "endian.hpp"
 #include "sound.hpp"
 #include "log.hpp"
+
+// other headers
+#include "endian.hpp"
+#include "lvalue_rvalue_pointers.hpp"
 
 using namespace std;
 
 static int _gm_splash_cleanup(GameMode* const gm, const PROGRAM& program) {
-	delete reinterpret_cast<Image*>(gm->data);
+	// free array
+	PDTexture** myTextures = (PDTexture**) gm->data;
+	delete[] myTextures;
+	
 	GM_ClearData(gm);
 	
 return 0;
 }
 
 static int _gm_splash_blit(GameMode* const gm, const PROGRAM& program) {
-	using game::Graphics;
+	PDTexture** myTextures = (PDTexture**) gm->data;
 	
 	// fade out to black after (150 - 97) frames
-	if (gm->tm == 97) {
+	if (gm->tm == 97)
 	  game::Flags.set(FADEOUT);
-	}
 	
-	// render two images
-	reinterpret_cast<Image*>(gm->data)->blit();
-	BG_BLACK.blit();
+	// render black screen OVER the splash image
+	myTextures[1]->Blit();
+	myTextures[0]->Blit();
 	
 return 0;
 }
 
 static int _gm_splash_screen_load_image(GameMode* const gm, const PROGRAM& program) {
-	Image* bg = new Image("images/ui/splash.bmp", program.renderer);
+	PDTexture** myTextures = new PDTexture*[2];
 	
-	if (bg->error())
-	  Log_Cerr("Failed to load \"images/ui/splash.bmp\" -- %s\n", bg->get_error());
-	else
-	  bg->set_blit_size(WIDTH, HEIGHT);
+	myTextures[0] = get_pointer( RManager.LoadTexture(FADER, "images/ui/black.bmp", nullptr) );
+	myTextures[0]->SetAlpha(0);
+	myTextures[1] = get_pointer( RManager.LoadTexture(TEXTURE, "images/ui/splash.bmp", nullptr) );
 	
-	// set no opacity on black screen
-	BG_BLACK.set_alpha(0);
-	
-	// set timer for splash image to be 150 frames
-	GM_SetData(gm, bg);
+	// change gamemode
+	GM_SetData(gm, (void*) myTextures);
 	GM_ChangeGamemode(gm, 1, 150);
 	
 return 0;

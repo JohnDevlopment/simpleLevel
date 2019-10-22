@@ -3,6 +3,8 @@
 #include "event_defines.hpp"
 #include "log.hpp"
 #include "tmath.hpp"
+#include "script.hpp"
+#include "lvalue_rvalue_pointers.hpp"
 
 using namespace std;
 
@@ -49,26 +51,14 @@ return 0;
 static int _gm_menu_init(GameMode* const gm, const PROGRAM& program) {
 	using namespace game;
 	
-	Image* bgs = new Image[2];
+	PDTexture** myTextures = new PDTexture*[3];
 	SDL_TimerID timer = 0;
 	
-	// set renderers
-	bgs[0].renderer = program.renderer;
-	bgs[1].renderer = program.renderer;
-	
-	// open background image; print error message in background if it fails
-	bgs[0].open("images/backgrounds/grassy_field.png");
-	
-	if (bgs[0].error())
-	  Log_Cerr("Failed to load background image grassy_field.png: %s\n", bgs[0].get_error());
-	
-	// open button UI image
-	bgs[1].open("images/ui/button_click_here.png");
-	
-	if (bgs[1].error()) {
-	  cerr << bgs[1].get_error() << " -- aborting program\n";
-	  return 1;
-	}
+	/* Load three textures. The first texture is the background image. The second
+	image is a button that the user clicks. And the third is a black screen. */
+	myTextures[0] = get_pointer( RManager.LoadTexture(MOVER, "images/backgrounds/grassy_field.png", nullptr) );
+	myTextures[1] = get_pointer( RManager.LoadTexture(MOVER, "images/ui/button_click_here.png", nullptr) );
+	myTextures[2] = get_pointer( RManager.LoadTexture(FADER, "images/ui/black.bmp", nullptr) );
 	
 	// load music
 	MenuMusic = Sound_LoadMUSType("audio/music/menu.ogg", MUS_TYPE_OGG);
@@ -84,29 +74,28 @@ static int _gm_menu_init(GameMode* const gm, const PROGRAM& program) {
 	Flags.set(FADEIN);
 	
 	// save bg images to GameMode
-	GM_SetData(gm, bgs);
+	GM_SetData(gm, (void*) myTextures);
 	
 return 2;
 }
 
 // run every frame after init
 static int _gm_menu_blit(GameMode* const gm, const PROGRAM& program) {
-	Image* bgs = (Image*) gm->data;
+	PDTexture** myTextures = (PDTexture**) gm->data;
 	
-	// background, button
-	bgs[0].blit();
-	bgs[1].blit(240, 180);
-	
-	// black rectangle
-	BG_BLACK.blit();
+	myTextures[0]->Blit( Point<int>(0, 0) );
+	myTextures[1]->Blit( Point<int>(240, 180) );
+	myTextures[2]->Blit();
 	
 return 0;
 }
 
 // cleanup function
 static int _gm_menu_cleanup(GameMode* const gm, const PROGRAM& program) {
-	// free ui images
-	delete[] (Image*) gm->data;
+	PDTexture** myTextures = (PDTexture**) gm->data;
+	
+	// free textures and the array
+	delete[] myTextures;
 	GM_ClearData(gm);
 	
 	// free music

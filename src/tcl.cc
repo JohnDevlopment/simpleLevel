@@ -1,17 +1,16 @@
-#include <cstdarg>
-
+// engine headers
 #include "camera.hpp"
-#include "color.h"
 #include "game.hpp"
+#include "log.hpp"
+#include "sound.hpp"
+#include "tcl.hpp"
 #include "levelcode.hpp"
 #include "levelinfo.hpp"
-#include "log.hpp"
-#include "memory.hpp"
-#include "sound.hpp"
-#include "sprite_router.hpp"
+
+// other headers
 #include "stdinc.h"
+#include "memory.hpp"
 #include "string.h"
-#include "tcl.hpp"
 
 #define TCL_CC 1
 #define MAX_NUM_HASHES	2000
@@ -127,7 +126,7 @@ static int _private_LevelBackground(ClientData cd, Tcl_Interp* interp, int objc,
 	  	color.blue = iAnInt;
 	  	
 	  	// change background color
-	  	game::bgcolor(color);
+	  	video::SetBgColor(color);
 	  	break;
 	  
 	  // "offsety"

@@ -18,6 +18,8 @@ Result variables
 
   SDL2_LIBRARY
     The library itself
+  SDL2_LIBDIR
+    Directory of the library; may be different from $SDLDIR
   SDL2_INCLUDE_DIR 
     The location of SDL2's headers
   SDL2_FOUND
@@ -28,11 +30,6 @@ Note
 
 This module was heavily inspired of the SDL find module that comes with CMake 3.14 as it's compiled.
 #]============================================================]
-if (NOT SDL2_FIND_QUIETLY)
-	message (STATUS "===FindSDL2 module loaded===")
-	message (STATUS "Locating SDL2 headers")
-endif ()
-
 # locate headers
 find_path (SDL2_INCLUDE_DIR SDL.h
             HINTS
@@ -43,13 +40,14 @@ find_path (SDL2_INCLUDE_DIR SDL.h
               "Location of SDL2's headers under the prefix"
           )
 
-# locate the library file
+# subdirectory different for 32- or 64-bit systems
 if(CMAKE_SIZEOF_VOID_P EQUAL 8)
   set(VC_LIB_PATH_SUFFIX lib/x64)
 else()
   set(VC_LIB_PATH_SUFFIX lib/x86)
 endif()
 
+# locate SDL2 library
 find_library (SDL2_LIBRARY_TEMP
                NAMES SDL2
                HINTS
@@ -57,6 +55,9 @@ find_library (SDL2_LIBRARY_TEMP
                PATH_SUFFIXES
                  lib ${VC_LIB_PATH_SUFFIX}
              )
+
+# get directory path of the library
+get_filename_component (SDL2_LIBDIR "${SDL2_LIBRARY_TEMP}" DIRECTORY CACHE)
 
 # render this entry invisible to the user
 set_property (CACHE SDL2_LIBRARY_TEMP PROPERTY TYPE INTERNAL)
@@ -120,7 +121,7 @@ if (SDL2_INCLUDE_DIR AND EXISTS "${SDL2_INCLUDE_DIR}/SDL_version.h")
 	file (STRINGS "${SDL2_INCLUDE_DIR}/SDL_version.h" _SDL2_PATCHLEVEL_LINE REGEX "^#define[ \t]+SDL_PATCHLEVEL[ \t]+[0-9]+$")
 	string (REGEX REPLACE "^#define[ \t]+SDL_MAJOR_VERSION[ \t]+([0-9]+)$" "\\1" _SDL2_MAJOR_VERSION "${_SDL2_VERSION_MAJOR_LINE}")
 	string (REGEX REPLACE "^#define[ \t]+SDL_MINOR_VERSION[ \t]+([0-9]+)$" "\\1" _SDL2_MINOR_VERSION "${_SDL2_VERSION_MINOR_LINE}")
-	string (REGEX REPLACE "^#define[ \t]+SDL_PATCHLEVEL[ \t]+([0-9]+)$" "\\1" _SDL2_PATCHLEVEL "${_SDL2_VERSION_MINOR_LINE}")
+	string (REGEX REPLACE "^#define[ \t]+SDL_PATCHLEVEL[ \t]+([0-9]+)$" "\\1" _SDL2_PATCHLEVEL "${_SDL2_PATCHLEVEL_LINE}")
 	set (SDL2_VERSION_STRING ${_SDL2_MAJOR_VERSION}.${_SDL2_MINOR_VERSION}.${_SDL2_PATCHLEVEL})
 	unset (_SDL2_VERSION_MAJOR_LINE)
 	unset (_SDL2_VERSION_MINOR_LINE)

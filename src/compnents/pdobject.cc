@@ -9,6 +9,10 @@ PDObject::PDObject(PDObjectType type) : m_components(), m_type(type), m_id(++s_o
 	m_components.reserve(START_SIZE);
 }
 
+PDObject::PDObject(PDObject&& src) {
+	// move ctor
+}
+
 PDObject::~PDObject()
 {
 	RemoveAllComponents();
@@ -23,14 +27,22 @@ void PDObject::Update(float dt) {
 	  	m_components[i] = m_components[m_components.size()-1];
 	  	m_components.pop_back();
 	  }
-//	  else {
-//	  	m_components[i]->Update(dt);
-//	  }
+	  else {
+	  	m_components[i]->Update(dt);
+	  }
 	}
 	
 	// update position of the object
 	m_pos[0] += m_vel.x() * dt;
 	m_pos[1] += m_vel.y() * dt;
+}
+
+void PDObject::FromFile(PDIniFile& inifile) {
+	inifile.SetToSection("");
+	inifile.GetValue("posx", m_pos[0]);
+	inifile.GetValue("posy", m_pos[1]);
+	inifile.GetValue("velx", m_vel[0]);
+	inifile.GetValue("vely", m_vel[1]);
 }
 
 void PDObject::AddComponent(PDComponent* comp) {
@@ -81,17 +93,12 @@ void PDObject::RemoveAllComponents(PDComponentType type) {
 }
 
 PDObject* PDObject::Clone() const {
-	PDObject* clone = new PDObject(m_type);
+	PDObject* pClone = new PDObject(m_type);
 	
-	// copy internal data
-	clone->m_pos = m_pos;
-	clone->m_vel = m_vel;
-	
-	const size_t szComp = m_components.size();
-	for (size_t i = 0; i < szComp; ++i) {
-	  PDComponent* temp = m_components[i]->Clone();
-	  clone->AddComponent(temp);
+	for (int i = 0; i < m_components.size(); ++i) {
+	  PDComponent* pComp = m_components[i]->Clone();
+	  pClone->AddComponent(pComp);
 	}
 	
-return clone;
+return pClone;
 }

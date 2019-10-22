@@ -11,29 +11,34 @@
    * 
 */
 
-// system headers
-#include <algorithm>
-#include <arrays.hpp>
-#include <bad_option>
-#include <lvalue_rvalue_pointers.hpp>
-#include <sstream>
+#include "gm_level.hpp"
 
+// core engine includes
 #include "camera.hpp"
 #include "game.hpp"
-#include "gm_level.hpp"
-#include "levelcode.hpp"
-#include "levelinfo.hpp"
-#include "log.hpp"
-#include "math.hpp"
-#include "particle_pdobject.h"
 #include "sound.hpp"
-#include "string.h"
+#include "levelcode.hpp"
+#include "log.hpp"
 #include "tcl.hpp"
 #include "tile_collision.hpp"
 #include "triggers.hpp"
 
+// helper includes
+#include "levelinfo.hpp"
+#include "math.hpp"
+#include "string.h"
+
+#include <algorithm>
+#include "arrays.hpp"
+#include "bad_option"
+#include "lvalue_rvalue_pointers.hpp"
+#include <sstream>
+
+static uint16_t _NumTiles = 0;
+
 // private function prototypes | code: INTFUNC_DECL
 static void makeTileLocList(const int);
+static Point<int> _getxy(uint16_t);
 static bool loadBackground(SDL_Renderer* const);
 static bool loadTileset(SDL_Surface**);
 static bool createTilemaps(SDL_Surface**);
@@ -51,34 +56,15 @@ using namespace level;
 // initialize namespace members | code: ENSVARS
 generic_class<LevelHeader> level::Header;
 SDL_Texture* level::Tilemap[4];
-Player* level::ThePlayer;
-int level::BGX;
 Tile* level::Tiles = nullptr;
 char* level::CurrentLevel = nullptr;
 Point<int>* level::TileLocations = nullptr;
 SDL_Texture* level::Backgrounds[2];
 
 // public member functions | code: EXTFUNC_IMPL
-//void level::correctBackground(const SDL_Rect* srcCam, const SDL_Rect* dstCam) {
-//	static int iDiff = 0;
-//	
-//	// record old camera difference
-//	if (srcCam != nullptr)
-//	  iDiff = bgx - srcCam->x; // d[bcx] = x[b] - x[c]
-//	
-//	// use difference to change the background such that it renders in the relative position
-//	if (dstCam != nullptr)
-//	  bgx = iDiff + dstCam->x; // x[b] = d[bcx] + x[c]
-//}
-
 int level::load(string file, const PROGRAM& program) {
 	SDL_Surface* temp_surTileset = nullptr;
 	SDL_Surface* temp_surTilemaps[2] = {nullptr, nullptr};
-	
-	// create the player
-	if (ThePlayer == nullptr) {
-	  ThePlayer = new Player(program.renderer);
-	}
 	
 	// check the length of the file string
 	if (file.length() == 0) {
@@ -106,7 +92,7 @@ int level::load(string file, const PROGRAM& program) {
 	
 	// create empty tilemap surfaces
 	if (! createTilemaps(temp_surTilemaps)) {
-	  Free(&temp_surTileset, &temp_surTilemaps[0]/*, &temp_surTilemaps[1]*/);
+	  Free(temp_surTileset, temp_surTilemaps[0]);
 	  return 1;
 	}
 	
@@ -115,15 +101,18 @@ int level::load(string file, const PROGRAM& program) {
 	
 	// convert the tilemap surfaces into textures
 	if (! turnTilemapsToTexture(temp_surTilemaps, program.renderer)) {
-	  Free(&temp_surTilemaps[0], &temp_surTilemaps[1], &temp_surTileset);
+	  Free(temp_surTilemaps[0], temp_surTilemaps[1], temp_surTileset);
 	  return 1;
 	}
 	
 	// free the back and front tilemap surfaces and the tileset surface
-	Free(&temp_surTilemaps[0], &temp_surTilemaps[1], &temp_surTileset);
+	Free(temp_surTilemaps[0], temp_surTilemaps[1], temp_surTileset);
 	
 	// define the level boundaries
 	camera::defineLevel(Header->width * TILE_WIDTH, Header->height * TILE_HEIGHT);
+	
+	// record the number of tiles within a level
+	_NumTiles = Header->width * Header->height;
 	
 	// create list of coordinates for each tile
 	makeTileLocList(Header->width * Header->height);
@@ -142,13 +131,6 @@ void level::update(GameMode* gm, SDL_Renderer* const ren) {
 	// render back tilemap
 	SDL_RenderCopy(ren, TILEMAP_BACK, cam, nullptr);
 	
-	// update the player`s data and graphics
-	CurrentSprite = ThePlayer;
-	if (ThePlayer->Main(nullptr) == 1) {
-	  game::Flags.set(FADEOUT|QUITGAME);
-	  camera::Track = false;
-	}
-	
 	// render front tilemap
 	SDL_RenderCopy(ren, TILEMAP_FRONT, cam, nullptr);
 }
@@ -166,28 +148,47 @@ void level::unload() {
 	delete[] TileLocations;
 	TileLocations = nullptr;
 	
-	// unload tilemaps; free background images
-	Free(&TILEMAP_BACK, &TILEMAP_FRONT);
+	// reset the number of tiles in the level
+	_NumTiles = 0;
 	
-	// reset background position
-	BGX = 0;
+	// unload tilemaps
+	Free(TILEMAP_BACK, TILEMAP_FRONT);
 	
 	// unload background images
 	if (! Flags.mask(DONT_UNLOAD_BGS)) {
-	  Free(&Backgrounds[0], &Backgrounds[1]);
+	  Free(Backgrounds[0], Backgrounds[1]);
 	}
 	else
 	  Flags.unset(DONT_UNLOAD_BGS);
 }
 
+Point<int> level::GetXY(uint16_t tile) {
+	char msg[55];
+	std::sprintf(msg, "only %d tiles in level; %d is invalid tile number", (int) _NumTiles, (int) tile);
+	Log_Assert(tile < _NumTiles, msg);
+	
+	return TileLocations[tile];
+}
+
 // private helper functions | code: INTFUNC_IMPL
+Point<int> _getxy(uint16_t tile) {
+	Point<int> xy;
+	
+	uint16_t uiTblw = Header->width * TILE_WIDTH;
+	uint16_t uiPix = tile * TILE_WIDTH;
+	
+	xy[0] = uiPix % uiTblw;
+	xy[1] = ((uiPix - (uiPix % uiTblw)) / uiTblw) * Header->height;
+	
+return xy;
+}
+
 void makeTileLocList(const int ntiles) {
 	Point<int> tilexy;
 	
 	TileLocations = new Point<int>[ntiles];
 	for (int x = 0; x < ntiles; ++x) {
-	  tilexy = GetXY(x, Header->width); // tile_collision.o
-	  TileLocations[x] = tilexy;
+	  TileLocations[x] = _getxy(x);
 	}
 }
 
@@ -206,8 +207,6 @@ void buildLevel(SDL_Surface* surTileset, SDL_Surface** surTilemaps) {
 
 int flagsBasedOnCodeID(const Tile& tile) {
 	int iFlags = 0, iSlpID;
-	
-//	iFlags = tile.flags;
 	
 	// slopes between 8 - 11
 	iSlpID = tile.codeID - 8;
@@ -280,9 +279,6 @@ return true;
 }
 
 bool loadBackground(SDL_Renderer* const ren) {
-	using game::loadTexture;
-	using std::copy;
-	
 	constexpr int _sBuffer_len = 45;
 	
 	char sBuffer[_sBuffer_len];
@@ -296,35 +292,31 @@ bool loadBackground(SDL_Renderer* const ren) {
 	// base file string based on bg index
 	sFileStr = LevelInfo_Background(Header->background);
 	
-	// append first substring to the directory prefix
+	// directory prefix
 	String_strcpy(sBuffer, "images/backgrounds/");
+	
+	// if there is no whitespace, append the string to the prefix
 	sSpace = String_strchr(sFileStr, ' ');
 	
 	if (sSpace == nullptr) {
 	  String_strlcat(sBuffer, sFileStr, _sBuffer_len);
 	}
+	
+	// otherwise, copy from the beginning of the string to just before the space
 	else {
-	  std::memset(sBuffer+19, 0, _sBuffer_len-19);
-	  copy((char*) sFileStr, (char*) std::min((int) sFileStr+26, (int) sSpace), sBuffer+19);
+	  String_memset(sBuffer+19, 0, _sBuffer_len-19);
+	  std::copy((char*) sFileStr, (char*) std::min((int) sFileStr+26, (int) sSpace), sBuffer+19);
 	}
 	
 	// load first texture from file
-	std::cout << "Loading " << sBuffer << std::endl;
-	texture = loadTexture(ren, sBuffer, nullptr);
-	if (! texture) {
-	  Log_Cerr("Failed to load %s\n", sBuffer+19);
-	}
+	texture = video::LoadTexture(ren, sBuffer, nullptr);
 	Backgrounds[0] = texture;
 	
 	// append second substring
 	if (sSpace) {
 	  sBuffer[19] = '\0';
 	  String_strlcat(sBuffer, sSpace+1, _sBuffer_len);
-	  std::cout << "Loading " << sBuffer << std::endl;
-	  texture = loadTexture(ren, sBuffer, nullptr);
-	  if (! texture) {
-	  	Log_Cerr("Failed to load %s\n", sBuffer+19);
-	  }
+	  texture = video::LoadTexture(ren, sBuffer, nullptr);
 	  Backgrounds[1] = texture;
 	}
 	

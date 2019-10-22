@@ -1,26 +1,26 @@
 // global game data
-#include "headers/game.hpp"
+#include "game.hpp"
 
 // Tcl scripting
-#include "headers/tcl.hpp"
+#include "tcl.hpp"
 
 // math functions
-#include "headers/math.hpp"
+#include "math.hpp"
 
 // level data
-#include "headers/levelcode.hpp"
+#include "levelcode.hpp"
 
 // level gamemode
-#include "headers/gm_level.hpp"
+#include "gm_level.hpp"
 
 // camera system
-#include "headers/camera.hpp"
+#include "camera.hpp"
 
 // event system
-#include "headers/triggers.hpp"
+#include "triggers.hpp"
 
 // logging output
-#include "headers/log.hpp"
+#include "log.hpp"
 
 using namespace std;
 

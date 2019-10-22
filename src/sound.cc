@@ -125,8 +125,6 @@ INLINE void _Sound_ClearChannel(_Sound_Channel& aChannel) {
 bool Sound_Init(int freq, uint16_t format, int ch, int chunksize) {
 	SDL_AudioSpec desiredspecs;
 	
-	Log_Cout("### Initializing Sound System ###\n");
-	
 	// if device already opened, return
 	if (Flags.mask(SOUND_API_INIT))
 	  return true;
@@ -155,8 +153,6 @@ bool Sound_Init(int freq, uint16_t format, int ch, int chunksize) {
 	if (MusicFmt_Init(*CurrentAudioSpecs) < 0)
 	  return false;
 	
-	Log_Cout("Initialized Ogg and WAV decoders\n");
-	
 	CurrentMusic = nullptr;
 	Sound_VolumeMusic(MAX_VOLUME);
 	
@@ -164,20 +160,12 @@ bool Sound_Init(int freq, uint16_t format, int ch, int chunksize) {
 	Channel = new _Sound_Channel[_num_channels];
 	for (int x = 0; x < _num_channels; ++x) {
 	  _Sound_ClearChannel(Channel[x]);
-//	  Channel[x].playing = 0;
-//	  Channel[x].looping = 0;
-//	  Channel[x].paused  = false;
-//	  Channel[x].samples = nullptr;
-//	  Channel[x].chunk   = nullptr;
-//	  Channel[x].expire  = 0;
-//	  Channel[x].start   = 0;
-//	  Channel[x].volume  = MAX_VOLUME;
 	}
 	
 	// set milliseconds per callback (step)
 	MsPerStep = static_cast<int>( (float) CurrentAudioSpecs->samples * 1000.0f / CurrentAudioSpecs->freq );
 	
-	Log_Cout("Allocated %d channels for mixing; milliseconds per \"step\" = %d\n", _num_channels, MsPerStep);
+	Log_Cout("    Allocated %d channels for mixing at %d milliseconds per step\n", _num_channels, MsPerStep);
 	
 	// open library file
 	Handle = DLOpen("audio/sound_effects/sfx.so");
@@ -185,21 +173,19 @@ bool Sound_Init(int freq, uint16_t format, int ch, int chunksize) {
 	  Sound_SetError(Sound_Init, "failed to open sfx.so");
 	  return false;
 	}
-	Log_Cout("Opened audio/sound_effects/sfx.so...reading symbols\n");
+	Log_Cout("    Opened audio/sound_effects/sfx.so\n");
 	
 	// load sound effects from library
 	if (loadGlobalSFX() < 0)
 	  return false;
 	
-	Log_Cout("Loaded %d sound effects to the global array\n", NUMBER_OF_GLOBAL_SFX);
+	Log_Cout("      - Loaded %d global sound effects\n", NUMBER_OF_GLOBAL_SFX);
 	
 	// set global flag
 	Flags.set(SOUND_API_INIT);
 	
 	// pause audio
 	SDL_PauseAudioDevice(AudioID, 0);
-	
-	Log_Cout("Initialized Sound system and set the appropriate flag\n\n");
 	
 return true;
 }
@@ -964,6 +950,8 @@ void audioCallback(void* udata, uint8_t* stream, int len) {
 }
 
 int openAudioDevice(SDL_AudioSpec& desiredspecs) {
+	const char* const spaces = "        ";
+	
 	// open audio device
 	AudioID = SDL_OpenAudioDevice(nullptr, 0, &desiredspecs, CurrentAudioSpecs, SDL_AUDIO_ALLOW_FORMAT_CHANGE);
 	if ( AudioID < 0 ) {
@@ -971,9 +959,12 @@ int openAudioDevice(SDL_AudioSpec& desiredspecs) {
 	  return -1;
 	}
 	
-	Log_Cout("Opened audio device: frequency = %d, %s audio, %d samples per chunk\n",
-		CurrentAudioSpecs->freq, (CurrentAudioSpecs->channels == 2) ? "stereo" : "mono",
-		CurrentAudioSpecs->samples);
+	{
+	  Log_Cout("    Opened audio device:\n%sfrequency = %d\n%s%s audio\n%s%d samples per chunk\n",
+	           spaces, CurrentAudioSpecs->freq, spaces,
+	           (CurrentAudioSpecs->channels == 2) ? "Stereo" : "Mono",
+	           spaces, CurrentAudioSpecs->samples);
+	}
 	
 	#ifndef NDEBUG
 	{
@@ -985,15 +976,18 @@ int openAudioDevice(SDL_AudioSpec& desiredspecs) {
 	  
 	  int _format = CurrentAudioSpecs->format;
 	  
+	  
+	  
 	  if ( SDL_AUDIO_ISFLOAT(_format) ) {
-	  	int _endian = SDL_AUDIO_ISBIGENDIAN(_format) ? 1 : 0;
-	  	Log_Cout("Audio device is based on 32-bit float data in %s-endian byte order\n", _strs[_endian]);
+	  	int _endian = (bool) SDL_AUDIO_ISBIGENDIAN(_format);
+	  	Log_Cout("%sAudio data: %s-endian floating point\n", spaces, _strs[_endian].c_str());
 	  }
 	  else {
-	  	int _endian = SDL_AUDIO_ISBIGENDIAN(_format) ? 1 : 0;
-	  	int _signed = SDL_AUDIO_ISSIGNED(_format) ? 1 : 0;
-	  	Log_Cout("Audio device is based on %d-bit %s integer data in %s-endian byte order\n",
-	  		SDL_AUDIO_BITSIZE(_format), _strs[_signed+2].c_str(), _strs[_endian].c_str());
+	  	int _endian = (bool) SDL_AUDIO_ISBIGENDIAN(_format);
+	  	int _signed = (bool) SDL_AUDIO_ISSIGNED(_format);
+	  	Log_Cout("%sAudio data: %s-endian %d-bit %s data\n",
+	  	         spaces, _strs[_endian].c_str(), SDL_AUDIO_BITSIZE(_format),
+	  	         _strs[_signed+2].c_str());
 	  }
 	}
 	#endif

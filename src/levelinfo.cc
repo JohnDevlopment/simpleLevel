@@ -1,4 +1,8 @@
+// engine headers
 #include "levelinfo.hpp"
+#include "log.hpp"
+
+// other headers
 #include "str_const.hpp"
 
 #define NUMBER_VALID_SONGS	3
@@ -35,7 +39,7 @@ static const float _bgmult[8] = {
 };
 
 const char* LevelInfo_Background(const unsigned int index) {
-	assert(index < 2);
+	Log_Assert(index < 2, "LevelInfo_Background: index is >= 2, which is invalid");
 	
 return _bg_files[index].get();
 }
@@ -96,33 +100,6 @@ const char* LevelInfo_Sfx(unsigned int id) {
 	assert(id < NUMBER_GLOBAL_SFX);
 	
 return _sfx_syms[id].get();
-}
-
-bool LevelInfo_TexturePack(unsigned int value, TexurePackArgs& args) {
-	static const char _colorkey[2] = {1, 1};
-	
-	assert(value < NUMBER_OF_TEXTURE_PACKS);
-	
-	// treat a 4-count 8-bit array like it`s a 32-bit integer
-	uint32_t* rgb = reinterpret_cast<uint32_t*>(args.rgb);
-		
-	// string filename, rgb colorkeys
-	switch (value) {
-	  default:
-	  	args.filename = "nothing";
-	  	*rgb = 0;
-	  	break;
-	  
-	  case 0:
-	  	args.filename = "shadowflytrap.jpg";
-	  	*rgb = 0xffffff00;
-	  	break;
-	}
-	
-	// colorkey true/false flag
-	args.colorkey = _colorkey[value];
-	
-return true;
 }
 
 double LevelInfo_MusicLoop(const size_t id) {

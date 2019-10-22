@@ -38,7 +38,6 @@ static char _Offsetx = 0;
 static char _Offsety = 0;
 
 using namespace camera;
-using level::ThePlayer;
 using level::Header;
 
 // returns true if the collision is inside the rectangle
@@ -57,7 +56,8 @@ void camera::correctCamera() {
 	const Point<int> camera(CAM_CAMERA.x + CAM_CAMERA.w / 2, CAM_CAMERA.y + CAM_CAMERA.h / 2);
 	
 	// sprite center point
-	const SDL_Rect& sprrect = ThePlayer->m_obj.get_dest_rect();
+	SDL_Rect sprrect = {0};
+//	const SDL_Rect& sprrect = ThePlayer->m_obj.get_dest_rect();
 	sprite[0] = sprrect.x + sprrect.w / 2;
 	sprite[1] = sprrect.y + sprrect.h / 2;
 	
@@ -112,7 +112,8 @@ void camera::track() {
 	// don't track the camera if disabled or player is at the beginning of the level
 	if (! Track) return;
 	
-  const SDL_Rect& spriteLoc = ThePlayer->m_obj.get_dest_rect();
+	SDL_Rect spriteLoc = {0};
+//  const SDL_Rect& spriteLoc = ThePlayer->m_obj.get_dest_rect();
 	SDL_Rect& cam       = CAM_CAMERA;
 	
   const int iSprEdge = spriteLoc.x + spriteLoc.w;

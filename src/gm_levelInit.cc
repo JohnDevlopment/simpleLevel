@@ -4,16 +4,18 @@
 #include "log.hpp"
 #include "sound.hpp"
 #include "tcl.hpp"
-#include "texture_packs.hpp"
 #include "tile_collision.hpp"
 #include "triggers.hpp"
+#include "pdresourcemanager.hpp"
 
 using namespace std;
 
 int gm_levelInit(void* const vgm, const PROGRAM& pgrm) {
+	string filename = "levels/rt1-1.dat";
+//	string filename = string("levels/") + level::CurrentLevel;
 	GameMode* gm = (GameMode*) vgm;
 	
-	BG_BLACK.blit();
+	PDTexture& blackScreen = RManager.LoadTexture(FADER, "images/ui/black.bmp", nullptr);
 	
 	// change the gamemode if the INIT routine has already went
 	if (! gm->tm) {
@@ -26,8 +28,7 @@ int gm_levelInit(void* const vgm, const PROGRAM& pgrm) {
 	  return 0;
 	
 	// load the level file into memory
-	//level::CurrentLevel
-	if (level::load("levels/rt1-1.dat", pgrm)) {
+	if ( level::load( std::move(filename), pgrm ) ) {
 	  level::unload();
 	  return 1;
 	}

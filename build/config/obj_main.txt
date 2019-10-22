@@ -1,8 +1,8 @@
 main.o
 bitmap_font.o
 camera.o
+endian.o
 event.o
-game.o
 gamemode.o
 gm_levelInit.o
 gm_level.o
@@ -11,12 +11,11 @@ gm_splash.o
 levelcode.o
 levelinfo.o
 locks.o
+input.o
 math.o
-res.o
+pdresourcemanager.o
+script.o
 sound.o
 string.o
-tcl.o
-texture_packs.o
 threads.o
-triggers.o
 tt_fonts.o

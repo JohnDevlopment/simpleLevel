@@ -15,6 +15,7 @@ set (PROJECT_BINARY_DIR ${SIMPLELEVEL_BINARY_DIR})
 set (CMAKE_MODULE_PATH ${PROJECT_ROOT_DIR}/build/modules)
 include (readobjfile)
 include (ConfigDefines)
+include (OSDetect)
 
 
 # set requirements for executable #
@@ -36,9 +37,13 @@ string (APPEND SOURCE_FILES ";${temp}")
 readobjfile (${PROJECT_ROOT_DIR}/build/config/obj_fileio.txt temp PREFIX ${PROJECT_ROOT_DIR}/src/fileio)
 string (APPEND SOURCE_FILES ";${temp}")
 
+# read list from obj_video.txt
+readobjfile (${PROJECT_ROOT_DIR}/build/config/obj_video.txt temp PREFIX ${PROJECT_ROOT_DIR}/src/video)
+string (APPEND SOURCE_FILES ";${temp}")
+
 # clear temp variables
 unset (temp)
 
 
-# define executable
+# build executable
 include (BuildSet_simpleLevel)

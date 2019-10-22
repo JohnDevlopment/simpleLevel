@@ -1,20 +1,19 @@
-#include "check_global_defines.hpp"
+// standard headers
 #include "stdinc.h"
 #include "sdl_incs.h"
 #include "memory.hpp"
+#include "check_global_defines.hpp"
+
+// engine headers
+#include "script.hpp"
 #include "game.hpp"
 #include "tcl.hpp"
 #include "res.hpp"
-#include "levelcode.hpp"
-#include "gamemode.hpp"
-#include "event.hpp"
 #include "log.hpp"
+#include "gamemode.hpp"
 #include "windows_or_linux.hpp"
-#include "texture_packs.hpp"
-#include <timer_class.hpp>
-#include <vector>
-#include <algorithm>
-
+#include "levelcode.hpp"
+#include "event.hpp"
 /* Includes definitions for SFXData and MusData.
    Includes function declarations and links to
    the headers for the Ogg Vorbis library.
@@ -23,6 +22,13 @@
 */
 #define OV_EXCLUDE_STATIC_CALLBACKS
 #include "sound.hpp"
+#include "pdresourcemanager.hpp"
+
+// external code headers
+#include "timer_class.hpp"
+
+// resource manager
+PDResourceManager RManager;
 
 // private
 static PROGRAM program;
@@ -40,46 +46,52 @@ Defines set in makefile: WIDTH, HEIGHT, TILE_WIDTH, TILE_HEIGHT, FPS
 
 using namespace std;
 
+namespace game {
+	Bitfield<uint16_t> Flags;
+	uint8_t FrameCounter = 0;
+	
+	#define HASHFUNC_H_IMPLEMENTATION 1
+	#include "hashfunc.h"
+	#undef HASHFUNC_H_IMPLEMENTATION
+}
+
 int main (int argc, char* argv[]) {
 	Timer fps;
 	generic_class<SDL_Event> event;
 	int ret = 0;
 	
 	atexit(quit);
-
+	
 	// initialize Log output
 	Log_Init();
-
-	// load Tcl library
-	if (TclCC_Init(&program))
-	  return 1;
-
+	
 	// load SDL library
+	Log_Cout("Initializing SDL Library\n");
 	if (loadSDL() < 0)
 	  return 1;
-
-	// load global game resources
-	if (! game::loadMedia(program.renderer))
+	
+	// load scripting engine
+	Log_Cout("Initializing Scripting Engine\n");
+	if (PDScript::Init(program) < 0)
 	  return 1;
-
-	// load texture packs
-	if (NewTexturePacks(program.renderer))
-	  return 1;
-
+	
 	// initialize the sound engine
+	Log_Cout("Initializing Sound Engine:\n    Initialized Ogg and WAV decoders\n");
 	if (! Sound_Init(22050, AUDIO_S16SYS, 2, 2048))
 	  return 1;
-
+	
+	// register renderer
+	video::SetRenderer(program.renderer);
+	
 	// gamemode object
 	GameMode* gm = GM_NewObj();
-
 	if (gm == nullptr)
 	  return 1;
-
+	
 	gm->tm = 1; // current gamemode init routine
-
+	
 	// set background color black
-	SDL_SetRenderDrawColor(program.renderer, 0, 0, 0, 0xff);
+	SDL_SetRenderDrawColor(program.renderer, 0, 0, 0, 255);
 	
 	Log_Cout("Initialization stage complete...now entering main loop\n");
 	
@@ -89,7 +101,7 @@ int main (int argc, char* argv[]) {
 	  
 	  // start the timer
 	  fps.start();
-
+	  
 	  // parse all events
 	  while (SDL_PollEvent(event.getp())) {
 	  	// user clicks on the 'X' button on the titlebar
@@ -157,8 +169,6 @@ return y;
 int loadSDL() {
 	int iReturn;
 	
-	Log_Cout("### Initializing SDL Library ###\n");
-	
 	// initialize SDL
 	iReturn = SDL_Init(SDL_INIT_VIDEO|SDL_INIT_AUDIO|SDL_INIT_TIMER);
 	if (iReturn) {
@@ -183,6 +193,9 @@ int loadSDL() {
 	  return -1;
 	}
 	
+	Log_Cout("    Created window; pointer to window data: %p\n    Created rendering context: address starts at %p\n",
+	         program.window, program.renderer);
+	
 	// sdl2_image
 	{
 	  const int iFlags = IMG_INIT_PNG|IMG_INIT_JPG;
@@ -202,45 +215,20 @@ int loadSDL() {
 	  SDL_GetWindowPosition(program.window, &vals[0], &vals[1]);
 	  SDL_GetWindowSize(program.window, &vals[2], &vals[3]);
 	  
-	  Log_Cout("Started video, audio, and timer subsystems\n");
-	  Log_Cout("Created window with title: \"%s\". Location: %d, %d. Size: %dx%d\n\n",
-	  	SDL_GetWindowTitle(program.window), vals[0], vals[1], vals[2], vals[3]);
+	  Log_Cout("    Started video, audio, and timer subsystems\n");
+	  Log_Cout("    Created window with title: \"%s\". Location: %d, %d. Size: %dx%d\n",
+	           SDL_GetWindowTitle(program.window), vals[0], vals[1], vals[2], vals[3]);
 	}
 
 return 0;
 }
 
 void quit() {
-	// shutdown the sound system
-	Sound_Quit();
-	
-	// free texture packs
-	FreeTexturePacks();
-	
-	// free globally shared data that's used by the program
-	game::free();
-	
-	// destroy the Tcl interpreter
-	TclCC_Quit();
-	
-	
-	// clear data //
-	
-	// delete the player object
-	delete level::ThePlayer;
-	
-	// free the gamemode pointer that was created earlier
-	GM_Free();
-	
-	
-	// quit central systems //
-	
-	// destroy window and data associated with it
-	destroyProgram(program);
-	
-	// quit SDL2_image
-	IMG_Quit();
-	
-	// quit SDL2 proper
-	SDL_Quit();
+	RManager.Clear(); // free textures from manager
+	Sound_Quit(); // quit sound system
+	PDScript::Shutdown(); // close script engine
+	GM_Free(); // free gamemode structure
+	destroyProgram(program); // destroy window
+	IMG_Quit(); // stop SDL2_image
+	SDL_Quit(); // stop SDL2
 }

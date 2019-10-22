@@ -1,6 +1,6 @@
-#include "headers/math.hpp"
+#include "math.hpp"
 
-// return -1 or 1 depending on the sign
+/* Returns 1 if the value is zero or positive, -1 otherwise. */
 int ReturnSign(int val) {
 	int ret = 1;
 	
@@ -26,12 +26,14 @@ float Approach(float a, float b, const float delta) {
 return b;
 }
 
-// degrees to radians
+/* Convert degrees to radians. */
 double Deg2Rad(double degrees) {
 	return degrees * PI / 180;
 }
 
-// absolute value
+/*
+   Returns the absolute value of an integer
+*/
 int Abs(int value) {
 	return (value < 0) ? value & (INT_MAX ^ INT_MIN) : value;
 }
@@ -43,8 +45,8 @@ short int Abs(short int value) {
 long int Abs(long int value) {
 	return (value < 0) ? value & (LONG_MAX ^ LONG_MIN) : value;
 }
-// end
 
+/* Returns 1 if the value given is less than 1. */
 float at_least_one(float base) {
 	if (base < 0) {
 	  if (base > -1) return base - 1;
@@ -56,7 +58,10 @@ float at_least_one(float base) {
 return 0;
 }
 
-// incremental
+/*
+   Decreases the value by the amount given by 'dec', but
+   doesn't let it go below zero.
+*/
 unsigned int Dec(unsigned int val, const unsigned int dec) {
 	if (val < dec)
 	  val = 0;
@@ -66,6 +71,10 @@ unsigned int Dec(unsigned int val, const unsigned int dec) {
 return val;
 }
 
+/*
+   Increases the value by the amount given by 'inc', but doesn't
+   let it go above the cap.
+*/
 unsigned int Inc(unsigned int val, const unsigned int inc, const unsigned int cap) {
 	if ( (val + inc) >= cap )
 	  val = cap;
@@ -74,28 +83,3 @@ unsigned int Inc(unsigned int val, const unsigned int inc, const unsigned int ca
 	
 return val;
 }
-// end
-
-uint32_t Swap32bit(uint32_t value) {
-	uint32_t retval = 0;
-	uint8_t* array = (uint8_t*) &retval;
-	const uint8_t* carray = (const uint8_t*) &value;
-	
-	array[0] = carray[3];
-	array[1] = carray[2];
-	array[2] = carray[1];
-	array[3] = carray[0];
-	
-return retval;
-}
-
-void Swap32bit(uint8_t* pValues) {
-	if (pValues == nullptr) return;
-	
-	uint8_t temp[] = {pValues[0], pValues[1], pValues[2], pValues[3]};
-	int y = 3;
-	for (int x = 0; x < 4; ++x)
-	  pValues[x] = temp[y--];
-}
-
-

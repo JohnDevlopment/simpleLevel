@@ -44,7 +44,7 @@ int Event_Main(SDL_Event& event, GameMode* const gamemode, const short int flag)
 	  nullptr,
 	  nullptr,
 	  nullptr,
-	  gm_level_keyboard
+	  nullptr
 	};
 	
 	// mouse motion events (currently disabled)

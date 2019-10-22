@@ -1,3 +1,7 @@
+#include "res.hpp"
+
+using namespace std;
+
 /* Included by res.cc. This file contains the Linux implementation of DLOpen, DLClose, and DLPtr. */
 void* DLOpen(const char* file) {
 	void* pdl = dlopen(file, RTLD_LAZY);

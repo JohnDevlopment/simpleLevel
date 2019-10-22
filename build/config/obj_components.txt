@@ -1,2 +1,4 @@
 pdcomponent.o
+pdmanager.o
 pdobject.o
+GfxComponent.o
