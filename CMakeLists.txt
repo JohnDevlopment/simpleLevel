@@ -41,6 +41,13 @@ string (APPEND SOURCE_FILES ";${temp}")
 readobjfile (${PROJECT_ROOT_DIR}/build/config/obj_video.txt temp PREFIX ${PROJECT_ROOT_DIR}/src/video)
 string (APPEND SOURCE_FILES ";${temp}")
 
+# add pdcommand.cc
+string (APPEND SOURCE_FILES ";${PROJECT_ROOT_DIR}/src/commands/pdcommand.cc")
+
+# read list from obj_gamemodes.txt
+readobjfile (${PROJECT_ROOT_DIR}/build/config/obj_gamemodes.txt temp PREFIX ${PROJECT_ROOT_DIR}/src/gamemodes)
+string (APPEND SOURCE_FILES ";${temp}")
+
 # clear temp variables
 unset (temp)
 

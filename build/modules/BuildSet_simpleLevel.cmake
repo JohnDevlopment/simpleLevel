@@ -57,11 +57,14 @@ target_include_directories (simpleLevel
                            )
 target_compile_options (simpleLevel
                          PRIVATE "SHELL:-iquote ${HEADERDIR}"
+                         PRIVATE "SHELL:-iquote ${HEADERDIR}/private"
                          PRIVATE "SHELL:-iquote ${HEADERDIR}/components"
                          PRIVATE "SHELL:-iquote ${HEADERDIR}/fileio"
                          PRIVATE "SHELL:-iquote ${HEADERDIR}/res"
                          PRIVATE "SHELL:-iquote ${HEADERDIR}/sound"
                          PRIVATE "SHELL:-iquote ${HEADERDIR}/video"
+                         PRIVATE "SHELL:-iquote ${HEADERDIR}/commands"
+                         PRIVATE "SHELL:-iquote ${HEADERDIR}/gamemodes"
                          PRIVATE "SHELL:$<$<BOOL:${DEBUG}>:-g>"
                          PRIVATE "SHELL:$<$<NOT:$<BOOL:${DEBUG}>>:-O3>"
                        )

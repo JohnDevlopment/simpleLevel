@@ -1,0 +1,2 @@
+pdgamemodemanager.o
+SplashGamemode.o

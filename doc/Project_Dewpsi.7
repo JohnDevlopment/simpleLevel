@@ -1,0 +1,143 @@
+\"	#CS - begin code block
+.de CS
+.RS
+.nf
+.ta 0.25i 0.5i
+..
+\"	#CE - end code block
+.de CE
+.fi
+.RE
+..
+\" Manual page for the Project Dewpsi game engine.
+.TH "Project Dewpsi" 7 "11/15/19" "Beta Build"
+.
+.SH NAME
+Project Dewpsi - official Project Dewsi game engine (beta)
+.
+.SH DESCRIPTION
+.PP
+This manual covers the underlying engine of \fBProject Dewpsi\fP.
+The engine is split into seven major systems: video, sound, input, \
+gamemodes, objects, logging, and scripting.
+.
+.SS VIDEO
+.PP
+The video system is responsible for the rendering of graphics.
+The functions are encapsulated within the namespace \fBvideo\fP.
+It keeps track of what is known as the graphics state.
+Whenever the video system is paused, the graphics state is saved; and when \
+it is resumed, the system is restored to its previous state.
+.
+.PP
+All the functions in this namespace are divided among header and source files according to their purpose.
+For example, all generic video functions are located in \fIvideo.h\fP and \fIvideo.cc\fP.
+Functions starting from \fBvideo::LoadTexture\fP are located in
+.IR textures.h " and " textures.cc \&.
+.
+.PP
+The functions starting with \fBvideo::SetToWorldPerspective\fP belong to \fIcamera.cc
+.
+.TP
+.BI "void video::SetBgColor(const JColor& " color )
+Changes the background color to the values listed in \fIcolor\fP.
+Also changes the state of the graphics engine to reflect this change.
+.
+.TP
+.BI "void SetRenderer(SDL_Renderer* " ren )
+.RI "Saves " ren " to the graphics engine so that it can later render graphics."
+.
+.TP
+.BI "void Init(int " width ", int " height ", SDL_Renderer* " ren )
+Initializes the graphics engine with the screen width, height, and the rendering context to use for drawing.
+In the DEBUG build of this engine, a macro keeps track of how many times the function is called.
+If \fBInit\fP is used more than once, an assertion aborts execution of the program.
+.
+.TP
+.B void Update()
+Updates the screen by clearing it, drawing the world components, and drawing the HUD components, \
+before presenting the changes to the screen.
+.
+.TP
+.BI "void RegisterWorldComponent(PDGfxComponent* " pComp )
+Registers a graphic component to the world drawspace.
+.
+.TP
+.BI "void RegisterHUDComponent(PDGfxComponent* " pComp )
+Registers a graphic component to the HUD drawspace.
+.
+.TP
+.BI "void SetCamera(int " x ", int " y )
+Sets the position of the active camera to
+.IR x " and " y .
+.
+.TP
+.BI "void Pause(bool " drawPaused )
+Pauses the graphics engine. \fIdrawPaused\fP defaults to false. \
+But if it is true the graphics components will continue to be drawn. \
+The current state of the engine is saved, to be later restored when
+.B video::Resume
+is called.
+.
+.TP
+.B void Resume()
+Resumes normal operation of the graphics engine and restores the previously saved\
+ state of the engine.
+.
+\" textures.cc and textures.h
+.TP
+.BI "SDL_Texture* LoadTexture(SDL_Renderer* " ren ", const char* " file ", const uint32_t* " colorkey " = NULL)"
+Reads \fIfile\fP and creates a texture based off its data using \fIren\fP to get information about the screen.
+If \fIcolorkey\fP is not NULL, it points to an integer that represents a color; the format of the integer \
+is 0x\fIRRGGBB\fPFF.
+.IR RR ", " GG ", and " BB
+are each hexadecimal values ranging between 0x00 and 0xFF (0-255) and represents how much of each color \
+to include in the final color value.
+If the \fIcolorkey\fP argument is provided, every pixel of that color will be drawn transparent.
+.IP
+What files can be read depends on the flags sent to \fBIMG_Load\fP.
+If an error occurs the returned pointer will be NULL; otherwise it should point to a loaded texture.
+.
+.TP
+.BI "SDL_Texture* LoadTexture(const char* " file ", const uint32_t* " colorkey " = nullptr)"
+.RI "Reads " file " and creates a texture based off of its data."
+This function just calls the first form of \fBLoadTexture\fP using a saved address to SDL_Renderer; \
+in practical terms it is no different from the other.
+.
+.TP
+.BI "TexMov_t* NewTexMov(const char* " file ", const uint32_t* " colorkey " = nullptr)"
+Constructs an SDL_Texture using \fBLoadTexture\fP and then puts it into a newly allocated \fBTexMov_t\fP.
+If an error occurs the returned pointer will be NULL; otherwise it should point to a loaded texture.
+.
+\" camera.cc and camera.h
+.TP
+.BI "void SetToWorldPerspective()"
+Sets the camera to the world perspective.
+.
+.TP
+.BI "void SetWorld(int " w ", int " h )
+Sets the world dimensions.
+.
+.SH "GENERAL INFO AND TIPS"
+.PP
+This section has some helpful tips and information.
+.
+.SS "Standard Headers"
+.TP
+.B stdinc.h
+.RB "Includes " <iostream> ", " <cstdlib> ", " <cstdio> ", " <cstring> ", " \(lqarrays.hpp\(lq ", "
+.BR <cassert> ", " <memory> ", " <climits> ", " <cstdint> ", and " <stdexcept> .
+.
+.SH BUGS
+.PP
+This build has not yet been bug-tested, so bugs have not been found.
+.
+.SH AUTHOR
+.PP
+This code was written by John Russell, but it was heavily inspired from the advice gotten from a book called
+.IR "Game Development Patterns And Best Practices"
+(published by Pakt).
+.SH "SEE ALSO"
+.ad l
+.nh
+.BR PDTexture "(7), " TexWrapper_t "(7), " TexFader_t "(7), " TexMov_t (7)
