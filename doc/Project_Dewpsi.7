@@ -1,19 +1,10 @@
-\"	#CS - begin code block
-.de CS
-.RS
-.nf
-.ta 0.25i 0.5i
-..
-\"	#CE - end code block
-.de CE
-.fi
-.RE
-..
+.mso www.tmac
+.mso pd.tmac \" Project Dewpsi macros
 \" Manual page for the Project Dewpsi game engine.
-.TH "Project Dewpsi" 7 "11/15/19" "Beta Build"
+.TH "Project Dewpsi" 7 "11/15/19" "Beta Build" "Project Dewpsi Development Manual"
 .
 .SH NAME
-Project Dewpsi - official Project Dewsi game engine (beta)
+Project Dewpsi \- official Project Dewsi game engine (beta)
 .
 .SH DESCRIPTION
 .PP
@@ -25,108 +16,179 @@ gamemodes, objects, logging, and scripting.
 .PP
 The video system is responsible for the rendering of graphics.
 The functions are encapsulated within the namespace \fBvideo\fP.
-It keeps track of what is known as the graphics state.
-Whenever the video system is paused, the graphics state is saved; and when \
-it is resumed, the system is restored to its previous state.
-.
-.PP
-All the functions in this namespace are divided among header and source files according to their purpose.
-For example, all generic video functions are located in \fIvideo.h\fP and \fIvideo.cc\fP.
-Functions starting from \fBvideo::LoadTexture\fP are located in
-.IR textures.h " and " textures.cc \&.
-.
-.PP
-The functions starting with \fBvideo::SetToWorldPerspective\fP belong to \fIcamera.cc
-.
 .TP
-.BI "void video::SetBgColor(const JColor& " color )
-Changes the background color to the values listed in \fIcolor\fP.
+.B Graphics State
+The video system keeps track of what\(aqs being drawn on the screen, as well as the current \
+position of the camera, etc., in a data construct that represents the state of the engine.
+Anytime the video engine is paused via \fBvideo::Pause\fP, a "snapshot" is taken of the current \
+state of the engine.
+And when the video engine is resumed, this "snapshot" is used to revert the state of the engine.
+.
+.IP "video.cc/video.h"
+Functions in namespace
+.B video\c
+\~are separated into different source files, sorted by their relative purpose.
+For example, video.cc implements all the actual draw and update processes, while textures.cc \
+contains functions that load graphics from files. Functions starting here belong to video.cc \
+and video.h.
+.
+.FA void SetBgColor "const JColor&" color
+Changes the background color to the values listed in \fIcolor\fP. \c
 Also changes the state of the graphics engine to reflect this change.
+.FA void SetRenderer SDL_Renderer* ren
+Saves \fIren\fR to the graphics engine so that it can later render graphics.
+.FA SDL_Renderer* GetRenderer
+Returns the rendering context that was passed to
+.B SetRenderer.
+.FA void Init int width int height SDL_Renderer* ren
+Initializes the video engine, supplying it with the width and height of the screen \
+as well as a pointer to the rendering device which will be used to draw elements \
+to the screen.
+It is only valid to call this function once.
+.FA void Update
+Draws every component to the screen.
+The world components are drawn first, then the HUD components.
+Then the changes are presented to the screen.
+.FA void RegisterWorldComponent PDGfxComponent* pComp
+Registers a component to be drawn in the game world.
+.FA void RegisterHUDComponent PDGfxComponent* pComp
+Registers a component to be drawn on the HUD.
+.FA void Pause bool drawPaused
+Pauses the video engine.
+Saves the current state of the engine to be later restored with a call to
+.B Resume.
+.FA void Resume
+Restarts the video engine and restores the previously saved graphics state.
 .
-.TP
-.BI "void SetRenderer(SDL_Renderer* " ren )
-.RI "Saves " ren " to the graphics engine so that it can later render graphics."
+.IP "textures.cc/textures.h"
+The loading and modification of textures, the game\(aqs primary way of representing graphics, \
+are handled in this file.
 .
-.TP
-.BI "void Init(int " width ", int " height ", SDL_Renderer* " ren )
-Initializes the graphics engine with the screen width, height, and the rendering context to use for drawing.
-In the DEBUG build of this engine, a macro keeps track of how many times the function is called.
-If \fBInit\fP is used more than once, an assertion aborts execution of the program.
+.FA SDL_Texture* LoadTexture SDL_Renderer ren "const char*" file "const uint32_t*" colorkey
+Returns a texture based off of the image data in \c
+.I file\c
+\&.
+.I ren \c
+points to a rendering context that was created by SDL_CreateRenderer. \c
+Assuming there are no errors, a valid pointer to SDL_Texture is returned; it \
+contains an abstract driver-specific representation of the image data, located in VRAM.
+.IP *
+.I colorkey \c
+is NULL by default; but if provided, it points to an integer that represents a color of the format \
+0x\fIRRGGBB\fPFF.
+.IR RR ", " GG ", and " BB
+are hexadecimal values ranging between 0x00 and 0xFF (0-255) and each represent how much of a certain color \
+to include in the final value\(emthey correspond to red, green, and blue respectively.
 .
-.TP
-.B void Update()
-Updates the screen by clearing it, drawing the world components, and drawing the HUD components, \
-before presenting the changes to the screen.
+.FA SDL_Texture* LoadTexture "const char*" file "const uint32_t*" colorkey
+Synonomous with \fBLoadTexture\fP up above, with the exception that it does\(aqt require \
+an SDL_Renderer.
+Only works if \fBSetRenderer\fP was called beforehand.
 .
-.TP
-.BI "void RegisterWorldComponent(PDGfxComponent* " pComp )
-Registers a graphic component to the world drawspace.
+.FA TexMov_t* NewTexMov "const char*" file "const uint32_t*" colorkey
+Loads an image file, \fIfile\fP, an constructs a TexMov_t based off of its data.
+\fIcolorkey\fP points to an integer of the format described above in \fBLoadTexture\fP; \
+it can be omitted, in which case it has no effect.
+But if \fIcolorkey\fP is provided it causes every pixel of that color to be drawn transparent.
 .
-.TP
-.BI "void RegisterHUDComponent(PDGfxComponent* " pComp )
-Registers a graphic component to the HUD drawspace.
+.IP "camera.cc/camera.h"
+Functions that set, reset, query, and modify the two types of cameras used in the game: they are referred to \
+as the world perspective and the HUD perspective.
 .
-.TP
-.BI "void SetCamera(int " x ", int " y )
-Sets the position of the active camera to
+.FA void SetToWorldPerspective
+Switches to the world perspective.
+.FA void SetWorld int w int h
+Sets the dimensions of the world.
+.FA void SetToHUDPerspective
+Switches to the HUD perspective.
+.FA void SetHUD
+Sets the dimensions of the HUD region
+.FA SDL_Rect* GetCamera
+Returns the currently active camera.
+.FA void SetCameraPos int x int y
+Sets the position of the active camera to \c
 .IR x " and " y .
 .
-.TP
-.BI "void Pause(bool " drawPaused )
-Pauses the graphics engine. \fIdrawPaused\fP defaults to false. \
-But if it is true the graphics components will continue to be drawn. \
-The current state of the engine is saved, to be later restored when
-.B video::Resume
-is called.
-.
-.TP
-.B void Resume()
-Resumes normal operation of the graphics engine and restores the previously saved\
- state of the engine.
-.
-\" textures.cc and textures.h
-.TP
-.BI "SDL_Texture* LoadTexture(SDL_Renderer* " ren ", const char* " file ", const uint32_t* " colorkey " = NULL)"
-Reads \fIfile\fP and creates a texture based off its data using \fIren\fP to get information about the screen.
-If \fIcolorkey\fP is not NULL, it points to an integer that represents a color; the format of the integer \
-is 0x\fIRRGGBB\fPFF.
-.IR RR ", " GG ", and " BB
-are each hexadecimal values ranging between 0x00 and 0xFF (0-255) and represents how much of each color \
-to include in the final color value.
-If the \fIcolorkey\fP argument is provided, every pixel of that color will be drawn transparent.
-.IP
-What files can be read depends on the flags sent to \fBIMG_Load\fP.
-If an error occurs the returned pointer will be NULL; otherwise it should point to a loaded texture.
-.
-.TP
-.BI "SDL_Texture* LoadTexture(const char* " file ", const uint32_t* " colorkey " = nullptr)"
-.RI "Reads " file " and creates a texture based off of its data."
-This function just calls the first form of \fBLoadTexture\fP using a saved address to SDL_Renderer; \
-in practical terms it is no different from the other.
-.
-.TP
-.BI "TexMov_t* NewTexMov(const char* " file ", const uint32_t* " colorkey " = nullptr)"
-Constructs an SDL_Texture using \fBLoadTexture\fP and then puts it into a newly allocated \fBTexMov_t\fP.
-If an error occurs the returned pointer will be NULL; otherwise it should point to a loaded texture.
-.
-\" camera.cc and camera.h
-.TP
-.BI "void SetToWorldPerspective()"
-Sets the camera to the world perspective.
-.
-.TP
-.BI "void SetWorld(int " w ", int " h )
-Sets the world dimensions.
-.
-.SH "GENERAL INFO AND TIPS"
+.SS "OBJECT MANAGER"
 .PP
-This section has some helpful tips and information.
+.B PDObjectManager\c
+\~is a singleton class that manages all the objects in the game.
+For the purposes of this engine, an object refers to any \%
+self-contained piece of code \
+that can move itself across the screen.
+In order to use this class you first have to call \c
+.B PDObjectManager::Init.
+And before the program ends, after you\(aqve finished using it, you must call \c
+.B PDObjectManager::Shutdown\c
+\~to free up the objects in memory that were used by the manager.
+.PP
+After the initialization stage, you should call \c
+.B PDObjectManager::Update\c
+\~once per frame to update the objects in a gamemode. \c
+It should not be neccessary, as it is done during initialization, but you may \c
+add new object prototypes \c
+.SM "(see below)"\c
+\~and add new component types to the manager.
+Project Dewpsi uses what is known as a factory to build components while objects \
+are created using prototypes.
 .
-.SS "Standard Headers"
-.TP
-.B stdinc.h
-.RB "Includes " <iostream> ", " <cstdlib> ", " <cstdio> ", " <cstring> ", " \(lqarrays.hpp\(lq ", "
-.BR <cassert> ", " <memory> ", " <climits> ", " <cstdint> ", and " <stdexcept> .
+.FA "static void" Init
+.PRIVATE
+Initializes the object manager.
+The object manager holds a list of created objects in a \fBstd::vector\fP.
+The vector preallocates some space so that memory allocation isn\(aqt done excessively.
+Another vector holds a list of object prototypes\(emeach prototype is associated with an \
+enumerated key in a hash table.
+A factory holds a list of component builders; a function registers each builder with a \
+numeric ID in a hash table.
+With this the object manager can now update, add and remove objects from its internal list.
+.FA "static void" Shutdown
+.PRIVATE
+Shuts down the object manager by deleting all the objects and object prototypes in the manager.
+.FA "static void" Update
+.PRIVATE
+Updates every object.
+If an object is marked as "dead", it gets deleted and removed from the object list.
+.
+.SS LOGGING
+.PP
+The logging system handles various I/O operations, particularly involving predefined log files.
+In order to use these functions, all you have to do is call \c
+.B Log_Init
+at the start of the program.
+There is no shutdown function as this system will clean itself up \
+automatically.
+.
+.FA void Log_Init
+Initializes the logging system.
+All it does is open two files for writing: by default they are cout.txt for normal status messages \
+and cerr.txt for errors that do not get put out to standard error.
+After this \c
+.BR Log_Cout " and " Log_Cerr
+can be used.
+.FA void Log_Error "const char*" fmt args
+Synonomous with printf.
+.FA void _Log_Assert "const bool" expr "const char*" msg "const char*" func "const char*" file "unsigned int" line
+.B Warning:
+this function is not meant to be used directly.
+Please use \fBLog_Assert\fR instead.
+Tests
+.IR expr ,
+printing a message that includes
+.IR msg ", " func ", " file ", and " line ,
+should the expression return false, and also aborting execution of the program via abort.
+.FA void _Log_Test "const bool" expr "const char*" testname
+Prints whether \fIexpr\fP evaluates to true or not using \fItestname\fP as part of its message.
+As with _Log_Assert, it is not recommended that you use this function directly but use
+.B Log_Test
+instead.
+\" macros
+.MACRO Log_Assert expr msg
+Tests whether
+.I expr
+is true and aborts execution with
+.I msg
+printed to stdout if it\(aqs false.
 .
 .SH BUGS
 .PP
@@ -134,10 +196,11 @@ This build has not yet been bug-tested, so bugs have not been found.
 .
 .SH AUTHOR
 .PP
-This code was written by John Russell, but it was heavily inspired from the advice gotten from a book called
-.IR "Game Development Patterns And Best Practices"
-(published by Pakt).
+All code was written by John Russell.
+However, the object manager, gamemode manager, factory class, object class, and all other related code were \
+written with the advice gotten from \c
+.URL "https://www.packtpub.com/game-development/game-development-patterns-and-best-practices" \
+"Game Development Patterns And Best Practices" ", which was published by Packt Publishing Limited."
+.
 .SH "SEE ALSO"
-.ad l
-.nh
-.BR PDTexture "(7), " TexWrapper_t "(7), " TexFader_t "(7), " TexMov_t (7)
+.BR PDTexture "(7), " TexWrapper_t "(7), " TexFader_t "(7), " TexMov_t "(7), " PDInifile (7)

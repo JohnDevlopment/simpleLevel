@@ -1,0 +1,75 @@
+.ig
+This macro package was created on Friday November 22, 2019, by John Russell.
+This macro package is part of the Project Dewpsi Development Manual setup.
+..
+.
+.
+\" skip if package already loaded
+.if r mPD .nx
+.nr mPD 1
+.
+.
+\"	#FA type name [type name ...] [tag] - define a function; an odd-numbered final argument is turned into "tag..."
+.de1 FA
+.sp \\n[PD]u
+.if \\n[.$] \{\
+.  in 0
+.  if !\\n[an-div?] \{\
+.    ll -\\n[an-margin]u
+.    di an-div
+.  \}
+.  nr an-div? 1
+.  it 1 an-trap
+.  ds my-result \,\f[B]\\$1\~\\$2\f[R]\/(
+.  shift 2
+.  while (\\n[.$] >= 2) \{\
+.    as my-result \,\f[B]\\$1\~\f[I]\/\\$2
+.    ie (\\n[.$] > 2) \{\
+.      as my-result ,\~
+.    \}
+.    shift 2
+.  \}
+.  if (\\n[.$] == 1) .as my-result \\$1.\|.\|.
+.  as my-result \f[R])
+.  nop \\*[my-result]
+.  ft R
+.\}
+..
+.
+\"	#PRIVATE [name] - mark a function or method as private
+.de PRIVATE
+.ds my-result \fBNote:\fP\~
+.ie !"\\$1"" .as my-result \\$1
+.el .as my-result this\~function
+.as my-result \~is\~marked\~as\~private.
+.nop \\*[my-result]
+..
+.
+\"	#MACRO name [args ...] - define a C/C++ macro
+.de MACRO
+\" this code from here to END is copied from the man package's .TP macro
+.sp \\n[PD]
+.in 0
+.if !\\n[an-div?] \{\
+.  ll -\\n[an-margin]u
+.  di an-div
+.\}
+.nr an-div? 1
+.it 1 an-trap
+\" END
+.ds my-result \fB#define\~\\$1\fR(
+.shift
+.while !"\\$1"" \{\
+.  as my-result \fI\\$1\fR
+.  if "\\$1"..." .break
+.  if !"\\$2"" .as my-result ,\~
+.  shift
+.\}
+.as my-result )
+.nop \\*[my-result]
+..
+.
+\"	#DEBUG - output a line that says "this macro/function is debug-only"
+.de DEBUG
+.nop This macro only works in the debug build.
+..

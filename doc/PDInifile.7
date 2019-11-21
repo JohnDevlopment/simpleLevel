@@ -1,0 +1,69 @@
+\" manual page for C++ class PDInifile
+\"	#FA type name [type name ...] [tag] - define a function; an odd-numbered final argument is turned into "tag..."
+.de1 FA
+.sp \\n[PD]u
+.if \\n[.$] \{\
+.  in 0
+.  if !\\n[an-div?] \{\
+.    ll -\\n[an-margin]u
+.    di an-div
+.  \}
+.  nr an-div? 1
+.  it 1 an-trap
+.  ds my-result \,\f[B]\\$1\~\\$2\f[R]\/(
+.  shift 2
+.  while (\\n[.$] >= 2) \{\
+.    as my-result \,\f[B]\\$1\~\f[I]\/\\$2
+.    ie (\\n[.$] > 2) \{\
+.      as my-result ,\~
+.    \}
+.    shift 2
+.  \}
+.  if (\\n[.$] == 1) .as my-result \\$1.\|.\|.
+.  as my-result \f[R])
+.  nop \\*[my-result]
+.  ft R
+.\}
+..
+\" start manual page
+.TH PDInifile 7 11/21/19 "" "Project Dewpsi Development Manual"
+.SH NAME
+PDInifile \- class that reads and parses INI files
+.
+.SH DESCRIPTION
+.PP
+.B PDInifile
+is a C++ class that implements reading of ini files. \c
+There are only two public functions, \c
+.BR ReadFile " and " SetToSection .
+.
+.IP
+.B menubutton.ini
+.EX
+posx = 0
+posy = 0
+velx = 0
+vely = 0
+components = GfxComponent MouseInputComponent
+
+[GfxComponent]
+texture = temp.png
+drawspace = hud
+
+[MouseInputComponent]
+bbox = 3 2 10 10
+.EE
+.
+.PP
+.
+.SS "Class Methods"
+.FA void ReadFile "const std::string&" file
+Reads an ini \fIfile\fP and constructs a map of it in memory.
+.FA void SetToSection "const std::string&" sec
+Goes to the section \fIsec\fP in the ini file.
+.FA "template<typename T> void" GetValue "const std::string&" key T& val
+Reads \c
+.I key \c
+in the currently marked section of an ini file and gives the result to \c
+.IR val , \c
+which can be of any type that can accept the extracted value.
