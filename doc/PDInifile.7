@@ -1,30 +1,4 @@
-\" manual page for C++ class PDInifile
-\"	#FA type name [type name ...] [tag] - define a function; an odd-numbered final argument is turned into "tag..."
-.de1 FA
-.sp \\n[PD]u
-.if \\n[.$] \{\
-.  in 0
-.  if !\\n[an-div?] \{\
-.    ll -\\n[an-margin]u
-.    di an-div
-.  \}
-.  nr an-div? 1
-.  it 1 an-trap
-.  ds my-result \,\f[B]\\$1\~\\$2\f[R]\/(
-.  shift 2
-.  while (\\n[.$] >= 2) \{\
-.    as my-result \,\f[B]\\$1\~\f[I]\/\\$2
-.    ie (\\n[.$] > 2) \{\
-.      as my-result ,\~
-.    \}
-.    shift 2
-.  \}
-.  if (\\n[.$] == 1) .as my-result \\$1.\|.\|.
-.  as my-result \f[R])
-.  nop \\*[my-result]
-.  ft R
-.\}
-..
+.mso pd.tmac
 \" start manual page
 .TH PDInifile 7 11/21/19 "" "Project Dewpsi Development Manual"
 .SH NAME
