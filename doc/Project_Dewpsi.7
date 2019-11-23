@@ -184,11 +184,22 @@ As with _Log_Assert, it is not recommended that you use this function directly b
 instead.
 \" macros
 .MACRO Log_Assert expr msg
+.DEBUG
 Tests whether
 .I expr
 is true and aborts execution with
 .I msg
 printed to stdout if it\(aqs false.
+.MACRO Log_Test expr
+.DEBUG
+Tests \fIexpr\fR and prints whether that expression returns true.
+.MACRO Log_Print expr
+Prints the string
+.I expr
+and then prints the value it evaluates to.
+.MACRO Log_printf fmt ...
+.DEBUG
+This macro expands to printf, so the arguments are the exact same.
 .
 .SH BUGS
 .PP
