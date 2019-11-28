@@ -23,7 +23,7 @@ This macro package is part of the Project Dewpsi Development Manual setup.
 .  ds my-result \,\f[B]\\$1\~\\$2\f[R]\/(
 .  shift 2
 .  while (\\n[.$] >= 2) \{\
-.    as my-result \,\f[B]\\$1\~\f[I]\/\\$2
+.    as my-result \,\f[B]\\$1\~\f[I]\/\\$2\f[R]
 .    ie (\\n[.$] > 2) \{\
 .      as my-result ,\~
 .    \}
@@ -35,16 +35,6 @@ This macro package is part of the Project Dewpsi Development Manual setup.
 .  ft R
 .\}
 ..
-.
-\"	#PRIVATE [name] - mark a function or method as private
-.de PRIVATE
-.ds my-result \fBNote:\fP\~
-.ie !"\\$1"" .as my-result \\$1
-.el .as my-result this\~function
-.as my-result \~is\~marked\~as\~private.
-.nop \\*[my-result]
-..
-.
 \"	#MACRO name [args ...] - define a C/C++ macro
 .de MACRO
 \" this code from here to END is copied from the man package's .TP macro
@@ -66,6 +56,15 @@ This macro package is part of the Project Dewpsi Development Manual setup.
 .  shift
 .\}
 .as my-result )
+.nop \\*[my-result]
+..
+.
+\"	#PRIVATE [name] - mark a function or method as private
+.de PRIVATE
+.ds my-result \fBNote:\fP\~
+.ie !"\\$1"" .as my-result \\$1
+.el .as my-result this\~function
+.as my-result \~is\~marked\~as\~private.
 .nop \\*[my-result]
 ..
 .

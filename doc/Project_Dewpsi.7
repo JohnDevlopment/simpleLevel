@@ -53,32 +53,38 @@ Then the changes are presented to the screen.
 Registers a component to be drawn in the game world.
 .FA void RegisterHUDComponent PDGfxComponent* pComp
 Registers a component to be drawn on the HUD.
+.FA void UnregisterComponent PDGfxComponent* pComp
+Removes the given component from the video component lists.
+.FA void ClearComponents
+Removes all components from video system.
 .FA void Pause bool drawPaused
 Pauses the video engine.
 Saves the current state of the engine to be later restored with a call to
 .B Resume.
 .FA void Resume
 Restarts the video engine and restores the previously saved graphics state.
+.FA void Draw PDTexture* texture int* pXY
+Draws the given texture to the screen.
+.I pXY
+is NULL if omitted. \c
+Otherwise it is a pointer to an array with two integers denoting the X & Y position that the \
+texture should be drawn at.
 .
 .IP "textures.cc/textures.h"
 The loading and modification of textures, the game\(aqs primary way of representing graphics, \
 are handled in this file.
 .
 .FA SDL_Texture* LoadTexture SDL_Renderer ren "const char*" file "const uint32_t*" colorkey
-Returns a texture based off of the image data in \c
+Constructs a texture based off of the image data in
 .I file\c
 \&.
-.I ren \c
-points to a rendering context that was created by SDL_CreateRenderer. \c
-Assuming there are no errors, a valid pointer to SDL_Texture is returned; it \
-contains an abstract driver-specific representation of the image data, located in VRAM.
-.IP *
-.I colorkey \c
-is NULL by default; but if provided, it points to an integer that represents a color of the format \
-0x\fIRRGGBB\fPFF.
-.IR RR ", " GG ", and " BB
-are hexadecimal values ranging between 0x00 and 0xFF (0-255) and each represent how much of a certain color \
-to include in the final value\(emthey correspond to red, green, and blue respectively.
+.I ren
+is used to get information on the screen and create a hardware-specific representation of image data.
+.I colorkey\c
+\&, if omitted, defaults to NULL and consequently has no effect.
+But if it is provided, it points to an integer of the format \f[I]RRGGBB\f[R]FF, where
+RR is a red value between 0 and 255, and GG and BB are the green and blue values respectively.
+Every pixel of that color will be transparent in the created texture.
 .
 .FA SDL_Texture* LoadTexture "const char*" file "const uint32_t*" colorkey
 Synonomous with \fBLoadTexture\fP up above, with the exception that it does\(aqt require \
@@ -108,6 +114,90 @@ Returns the currently active camera.
 .FA void SetCameraPos int x int y
 Sets the position of the active camera to \c
 .IR x " and " y .
+.
+.SS "GAMEMODE MANAGER"
+.PP
+.B PDGamemodeManager
+is a singleton class that manages all gamemodes.
+A gamemode is a section of the game\(aqs code, such as when the splash screen is displayed, \
+or when the title menu is up.
+.PP
+All the functions in this class are static, so there is no need to make an object of it.
+To use this manager, call
+.B Init
+to get initialize the game manager.
+.B SetFirstGamemode
+is called somewhere at the beginning of the program, after the manager is \
+already initialized, to set the initial gamemode.
+.B Update
+is called in the game loop to update the state of an active gamemode.
+Shutdown is used somewhere near the end of the program to free all resources \
+associated with the manager.
+After that point the manager cannot be used.
+.PP
+This class has private methods.
+Those methods can be freely accessed by class
+.B PDApp\c
+\&.
+.
+.FA "static void" InitGamemode
+.PRIVATE
+Initializes the current gamemode according to several flags.
+Called at the beginning of \fBUpdate\fP.
+.FA "static void" ChangeGamemode
+.PRIVATE
+Switches to a different gamemode.
+Called at the end of \fBUpdate\fP.
+.FA "static void" Init "const PDGameData&" srcData
+.PRIVATE
+Initializes the gamemode manager with the information found in
+.I srcData\c
+\&.
+This function must be called before any other.
+.FA "static void" Update
+.PRIVATE
+Starts up and continues execution of the current gamemode.
+This function initializes a loop that helps with executing the code.
+.FA "static void" Shutdown
+.PRIVATE
+Deactivates the gamemode manager.
+It cannot be used after this is called.
+.FA "static bool" IsQuitting
+Returns true if the gamemode manager is quitting.
+.FA "static bool" IsRestarting
+Returns true if the manager is restarting a gamemode.
+.FA "static PDGameData&" GetGameData
+Returns the shared game data.
+.FA "static void" AddGamemode PDGamemodeType type PDGamemodeBuilder* builder
+Adds a gamemode builder to the factory.
+.I builder
+should return a class derived from PDGamemode.
+You can then build the gamemode marked by
+.I type
+by calling
+.BR SetFirstGamemode ", " SetNextGamemode ", and " PauseAndChangeGamemode .
+.FA "static void" RemoveGamemode PDGamemodeType type
+Removes the specified gamemode from the manager.
+.FA "static void" ClearGamemodes
+Removes all gamemodes from the manager.
+.FA "static void" SetFirstGamemode PDGamemodeType type
+Call this function only once near the beginning of the program.
+Sets the initial gamemode.
+.FA "static void" SetNextGamemode PDGamemodeType type
+Sets the next gamemode.
+.FA "static void" PauseAndChangeGamemode PDGamemodeType next bool drawPaused
+Pauses the active gamemode and loads a different one specified by \fInext\fR.
+If
+.I drawPaused
+is true, the objects being drawn to the screen will still be drawn even after pausing \
+the gamemode.
+.I drawPaused
+defaults to false if omitted.
+.FA "static void" Resume
+Resumes the previously paused gamemode.
+Should be called an equal number of times that
+.B PauseAndChangeGamemode
+was called.
 .
 .SS "OBJECT MANAGER"
 .PP
