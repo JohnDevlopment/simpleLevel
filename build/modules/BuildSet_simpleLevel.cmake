@@ -15,6 +15,7 @@ target_include_directories (os_resobj
                            )
 target_compile_options (os_resobj
                          PRIVATE "SHELL:-iquote ${HEADERDIR}"
+                         PRIVATE "SHELL:-Werror"
                        )
 set_os_compiler_defines (os_resobj)
 
@@ -67,7 +68,14 @@ target_compile_options (simpleLevel
                          PRIVATE "SHELL:-iquote ${HEADERDIR}/gamemodes"
                          PRIVATE "SHELL:$<$<BOOL:${DEBUG}>:-g>"
                          PRIVATE "SHELL:$<$<NOT:$<BOOL:${DEBUG}>>:-O3>"
+#                         PRIVATE "SHELL:-Wall"
+                         PRIVATE "SHELL:-Wdelete-non-virtual-dtor"
+                         PRIVATE "SHELL:-Wc++11-compat"
+                         PRIVATE "SHELL:-Wreorder"
+#                         PRIVATE "SHELL:-Wold-style-cast"
+                         PRIVATE "SHELL:-Wreturn-type"
                        )
+
 target_compile_definitions (simpleLevel
                              PRIVATE
                               FPS=30
@@ -81,6 +89,9 @@ target_compile_definitions (simpleLevel
                               TILE_WIDTH=32
                               WIDTH=640
                               $<$<NOT:$<BOOL:${DEBUG}>>:NDEBUG>
+                              COMP_IMG_PATH="images/sprites/"
+                              UI_IMG_PATH="images/ui/"
+                              GAMEMODE_DATA_PATH="data/gamemodes/"
                            )
 
 # link exectuable with libraries and set linker options

@@ -1,3 +1,4 @@
+objecthelper.o
 pdcomponent.o
 pdmanager.o
 pdobject.o
