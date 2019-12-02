@@ -1,19 +1,18 @@
-#include "game.hpp"
+// engine headers
+#include "stdinc.h"
 #include "sdl_incs.h"
+#include "game.hpp"
 #include "bitmap_font.hpp"
 #include "tt_fonts.hpp"
 #include "log.hpp"
 
-#include <utility>
-#include <lvalue_rvalue_pointers.hpp>
-#include <array>
-#include <bad_option>
+// helper headers
+#include "color.h"
 #include <fstream>
-#include <cmath>
+#include "math.hpp"
+#include "bad_option"
 
 using namespace std;
-
-//static void get_row_col(const int idx, uint8_t& row_r, uint8_t& col_r);
 
 // class BitmapFont //
 BitmapFont::BitmapFont() {
@@ -127,14 +126,14 @@ bool BitmapFont::open(SDL_Renderer* renderer, string file, uint32_t colorkey) {
 	SDL_Surface* tfmtsur = nullptr; // surface covnerted to texture later on
 	
 	// the red, green, and blue components of the color key
-	array<uint8_t, 3> rgb;
+	uint8_t rgb[3];
 	rgb[0] = RED_CHANNEL(colorkey);
 	rgb[1] = GREEN_CHANNEL(colorkey);
 	rgb[2] = BLUE_CHANNEL(colorkey);
 	
 	{
 	  // load image onto surface
-	  SDL_Surface* tsur = IMG_Load( file.c_str() );
+	  SDL_Surface* tsur = IMG_Load(file.c_str());
 	  
 	  if (tsur == nullptr) {
 	  	cerr << "BitmapFont::open: " << IMG_GetError() << '\n';
@@ -163,13 +162,12 @@ bool BitmapFont::open(SDL_Renderer* renderer, string file, uint32_t colorkey) {
 	
 	if (texture == nullptr) {
 	  cerr << "BitmapFont::open: " << SDL_GetError() << '\n';
-	  SDL_FreeSurface(tfmtsur);
-	  return false;
 	}
-	
-	// record size of the image
-	this->width = tfmtsur->w;
-	this->height = tfmtsur->h;
+	else {
+	  // record size of the image
+	  this->width = tfmtsur->w;
+	  this->height = tfmtsur->h;
+	}
 	
 	// free surface
 	SDL_FreeSurface(tfmtsur);

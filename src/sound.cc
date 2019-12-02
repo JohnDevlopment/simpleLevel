@@ -32,14 +32,10 @@
 #include "sound/sound_channel_def.h"
 
 #include "res.hpp"
-#include "levelinfo.hpp"
-#include "levelcode.hpp"
-#include "tcl.hpp"
 #include "log.hpp"
 #include "memory.hpp"
 #include "str_const.hpp" // compile-time strings
 #include <list>
-#include <vector>
 #include <new>
 #include "debug.hpp"
 #include "string.h"
@@ -435,7 +431,7 @@ void Sound_ResumeMusic() {
 }
 
 bool Sound_PausedMusic() {
-	return MusicActive;
+	return ! MusicActive;
 }
 
 MUS_FadingStatus Sound_FadingMusic() {

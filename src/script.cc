@@ -13,17 +13,13 @@ namespace {
 /* Initialize Tcl scripting engine. Returns 0
 on success and -1 on failure. */
 /**************************************************/
-int PDScript::Init(const PROGRAM& pg) {
+int PDScript::Init() {
 	using std::cerr;
 	
 	_Buffer = Tcl_Alloc(256);
-	if (! _Buffer) {
-	  cerr << "Failed to allocate buffer\n";
-	  return -1;
-	}
-	
 	_Error = Tcl_Alloc(100);
-	if (! _Error) {
+	
+	if (! _Error || ! _Buffer) {
 	  cerr << "Failed to allocate buffer\n";
 	  return -1;
 	}
@@ -60,8 +56,16 @@ int PDScript::EvalScript(const char* cmd) {
 	int iResult = Tcl_Eval(_Interp, cmd);
 	
 	if (iResult != TCL_OK) {
-	  String_sprintf(_Error, "Error: %s", Tcl_GetStringResult(_Interp));
+	  String_sprintf(_Error, "Error: %s", Tcl_GetStringResult(_Interp) );
 	}
 	
 return iResult;
+}
+
+/**************************************************/
+/* Returns a string detailing the last error
+that was set. */
+/**************************************************/
+const char* PDScript::GetError() {
+	return _Error;
 }

@@ -19,7 +19,7 @@ int gm_menu_event_mousebutton(SDL_Event& event, GameMode* const gm, uint8_t mask
 	  return 0;
 	
 	// if the left mouse button was clicked
-	if (sdl_buttonstate(event) == EVENT_PRESSED && sdl_left(event)) {
+	if ( sdl_buttonstate(event) == EVENT_PRESSED && sdl_left(event) ) {
 	  int x, y;
 	  
 	  SDL_GetMouseState(&x, &y);
@@ -30,7 +30,7 @@ int gm_menu_event_mousebutton(SDL_Event& event, GameMode* const gm, uint8_t mask
 	  	Flags.set(FADEOUT);
 	  	
 	  	// change to gamemode 2 in 50 frames; stop music; play sfx
-	  	GM_ChangeGamemode(gm, 2, miliseconds_to_frames(2000));
+	  	GM_ChangeGamemode(gm, 2, miliseconds_to_frames(3000));
 	  	Sound_FadeOutMusic(1000);
 	  	Sound_PlaySFX(SFXStartGame, 0);
 	  	SDL_Delay(1000);
@@ -52,7 +52,6 @@ static int _gm_menu_init(GameMode* const gm, const PROGRAM& program) {
 	using namespace game;
 	
 	PDTexture** myTextures = new PDTexture*[3];
-	SDL_TimerID timer = 0;
 	
 	/* Load three textures. The first texture is the background image. The second
 	image is a button that the user clicks. And the third is a black screen. */
@@ -66,7 +65,7 @@ static int _gm_menu_init(GameMode* const gm, const PROGRAM& program) {
 	  MusData_SetVolume(MenuMusic, 45);
 	
 	// play the music after a 800 miliseconds
-	timer = SDL_AddTimer(800, timerCallback_playMenuMusic, MenuMusic);
+	SDL_TimerID timer = SDL_AddTimer(800, timerCallback_playMenuMusic, MenuMusic);
 	if (! timer)
 	  std::cerr << "Failed to initialize timer: " << SDL_GetError() << '\n';
 	
@@ -76,7 +75,7 @@ static int _gm_menu_init(GameMode* const gm, const PROGRAM& program) {
 	// save bg images to GameMode
 	GM_SetData(gm, (void*) myTextures);
 	
-return 2;
+return 0;
 }
 
 // run every frame after init
@@ -94,12 +93,18 @@ return 0;
 static int _gm_menu_cleanup(GameMode* const gm, const PROGRAM& program) {
 	PDTexture** myTextures = (PDTexture**) gm->data;
 	
-	// free textures and the array
-	delete[] myTextures;
-	GM_ClearData(gm);
-	
-	// free music
-	Sound_FreeMUS(MenuMusic);
+	if ( game::Flags.mask(LEVEL_CLEANUP|QUITGAME) ) {
+	  // free textures and the array
+	  delete[] myTextures;
+	  GM_ClearData(gm);
+	  
+	  // free music
+	  Sound_FreeMUS(MenuMusic);
+	  MenuMusic = nullptr;
+	  
+	  // start shutdown procedure
+	  game::Shutdown->DoAction();
+	}
 	
 return 0;
 }

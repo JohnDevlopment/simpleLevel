@@ -1,5 +1,5 @@
 // engine headers
-#include "gamemode.hpp"
+#include "pdgamemode.h"
 #include "game.hpp"
 #include "textures.h"
 #include "log.hpp"
@@ -11,6 +11,7 @@
 #include <stdexcept>
 #include "memory.hpp"
 #include "lvalue_rvalue_pointers.hpp"
+#include "string.h"
 
 // gamemode headers
 #include "gm_splash.hpp"
@@ -19,6 +20,32 @@
 #include "gm_levelInit.hpp"
 
 using namespace std;
+
+namespace {
+	static GameMode* GameMode = nullptr;
+}
+
+GMManager::GMManager() {
+	// ctor
+}
+
+GMManager::~GMManager() {
+	// dtor
+}
+
+GameMode* GMManager::NewGMPtr() {
+	GameMode* const ptr = new (std::nothrow) GameMode;
+	if (! ptr) {
+	  cerr << "Not enough memory for GameMode pointer\n";
+	}
+	
+	String_memset(ptr, 0, sizeof(*ptr));
+	
+return ptr;
+}
+
+
+
 
 // keeps track of the allocated GameMode pointer
 static GameMode* GM_FreeLater = nullptr;
@@ -71,33 +98,7 @@ void GM_Free() {
 	GM_FreeLater = nullptr;
 }
 
-GameMode* GM_NewObj() {
-	GameMode* ret_ptr;
-	
-	// if the pointer was already allocated, return
-	if (GM_FreeLater) {
-	  return GM_FreeLater;
-	}
-	
-	// allocate the pointer
-	ret_ptr = new (std::nothrow) GameMode;
-	
-	if (ret_ptr == nullptr) {
-	  cerr << "could not allocate memory to GameMode pointer\n";
-	}
-	else {
-	  // initialize values
-	  ret_ptr->gm_next = 0;
-	  ret_ptr->gm_cur  = 0;
-	  ret_ptr->tm      = 0;
-	  ret_ptr->data    = nullptr;
-	  
-	  // keep track of pointer
-	  GM_FreeLater = ret_ptr;
-	}
-	
-return ret_ptr;
-}
+
 
 /* Increases or decreases the alpha value of the black screen. */
 uint8_t fade_to_or_from_black(uint8_t rate, bool increment) {
