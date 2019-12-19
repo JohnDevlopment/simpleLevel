@@ -1,0 +1,760 @@
+\" t
+.mso pd.tmac \" Project Dewpsi macros
+.TH "Project Dewpsi" 7 "11/15/19" "" "Project Dewpsi Development Manual"
+.SH NAME
+Project Dewpsi \- official Project Dewsi game engine
+.
+.SH DESCRIPTION
+.PP
+This manual covers the underlying engine of \fBProject Dewpsi\fP.
+The engine is split into seven major systems:
+\" start list of internal links to subheadings
+.IP *
+.URL #sh-desc_ss-video "video system"
+.IP *
+sound system
+.IP *
+input system
+.IP *
+.URL #sh-desc_ss-gm "gamemode manager"
+.IP *
+.URL #sh-desc_ss-obj "object manager"
+.IP *
+.URL #sh-desc_ss-log "logging system"
+.IP *
+scripting engine
+.
+\" start video system section
+.TAG sh-desc_ss-video
+.SS "Video System"
+The following functions are defined under the namespace
+.B video\c
+\&.
+Note that the functions are split among multiple source and header files.
+.
+\" functions implemented in video.cc
+.SS "video.cc/video.h"
+.PP
+Included are functions to draw textures to the screen, to set and get a rendering context, \
+and to affect the state of the video engine.
+Some functions cannot or should not be used before Init() is called.
+On the other hand, some functions are perfectly fine to be used at any time.
+.
+.FA void SetBgColor "const JColor&" color
+Changes the draw color, and by extension the background color, of the window.
+The argument is a struct called
+.URL #sh-types_ss-jcolor JColor\.
+.FA void SetRenderer SDL_Renderer* ren
+Saves \fIren\fR to the graphics engine so that it can later render graphics.
+.FA SDL_Renderer* GetRenderer
+Returns the rendering context that was passed to
+.B SetRenderer.
+.FA void Init int width int height SDL_Renderer* ren
+Initializes the video engine.
+This function should only be called once; it is called by PDApp::Init() automatically.
+.AL
+.AO width
+The width of the screen in pixels.
+.AO height
+The height of the screen in pixels.
+.AO ren
+The rendering context for the entire game window.
+It must be a valid non-\f[CW]NULL\f[] pointer that was created with a call to SDL_CreateRenderer().
+.LA
+.FA void Update
+Draws every component to the screen.
+The world components are drawn first, then the HUD components.
+Then the changes are presented to the screen.
+.FA void Shutdown
+Shuts down the video engine.
+.FA void RegisterWorldComponent PDGfxComponent* pComp
+Registers a component to be drawn in the game world.
+.FA void RegisterHUDComponent PDGfxComponent* pComp
+Registers a component to be drawn on the HUD.
+.FA void RegisterHUDFader PDFadeComponent* pComp
+Registers a fade component to be drawn on the HUD above everything else.
+There can only be one registered at a time.
+.FA void UnregisterComponent PDGfxComponent* pComp
+Removes the given component from the video component lists.
+.FA void UnregisterComponent PDFadeComponent* pComp
+De-links a fader component from the video engine, so that it\(aqs no longer processed by it.
+.FA void ClearComponents
+Removes all components from video system.
+.FA void Pause bool drawPaused
+Pauses the video engine.
+Saves the current state of the engine to be later restored with a call to
+.B Resume.
+.FA void Resume
+Restarts the video engine and restores the previously saved graphics state.
+.FA void Draw PDTexture* texture "const Point<int>&" pos
+Draws the given texture to the screen at position
+.I pos\c
+\&.
+.
+.SS "textures.cc/textures.h"
+Included are functions to create textures.
+The main type used here is PDTexture.
+.
+.FA SDL_Texture* LoadTexture SDL_Renderer* ren "const char*" file "const uint32_t*" colorkey
+Use this function to create a texture for a rendering context.
+The return value is a newly created texture or
+.CW NULL
+if there is an error.
+In the case that there is an error, the error message is printed to the screen and to a log file.
+.AL
+.AO ren
+The rendering context to make the texture for.
+Must be a valid pointer returned by an SDL function.
+.AO file
+A string path to the file to read and base the texture off of.
+The file must already exist.
+.AO colorkey
+A pointer to an integer that determines the color key of the texture.
+If this argument is supplied the chosen color will be transparent in the created texture.
+The integer must be in \fIRRGGBB\f[]FF format, where
+.IR RR ", " GG ", and " BB
+represent the red, green and blue components of the color key respectively.
+If this argument is
+.CW NULL\c
+\0then no color key will be set.
+.LA
+.FA SDL_Texture* LoadTexture "const char*" file "const uint32_t*" colorkey
+Use this function to create a texture for the rendering context that was previously saved in
+.B video::SetRenderer()\c
+\&.
+The return value is a newly created texture or
+.CW NULL
+if there is an error.
+In the case that there is an error, the error message is printed to the screen and to a log file.
+.AL
+.AO file
+A string path to the file to read and base the texture off of.
+The file must already exist.
+.AO colorkey
+A pointer to an integer that determines the color key of the texture.
+If this argument is supplied the chosen color will be transparent in the created texture.
+The integer must be in \fIRRGGBB\f[]FF format, where
+.IR RR ", " GG ", and " BB
+represent the red, green and blue components of the color key respectively.
+If this argument is
+.CW NULL\c
+\0then no color key will be set.
+.LA
+.FA SDL_Texture* NewColorScreen "const uint8_t*" color int width int height uint32_t format PatternArray& pattern
+Use this function to construct a texture that has a stipple pattern.
+.AL
+.AO color
+A pointer to an array with three integers; they contain in order the red, green and blue components of the \
+desired fill color.
+.AO width
+The desired width of the texture in pixels.
+.AO height
+The desired height of the texture in pixels.
+.AO format
+An
+.URL https://wiki\.libsdl\.org/SDL_PixelFormatEnum SDL_PixelFormatEnum
+that indicates the desired format of the texture.
+.AO pattern
+A struct that can be created with
+.B make_pattern()\c
+\&.
+It contains an array that specifies the stipple pattern.
+The array can have an arbitrary amount of elements that does not have to match with the number \
+of pixels in the texture.
+.LA
+.
+.SS "camera.cc/camera.h"
+.PP
+Included are functions that query or modify the game's camera.
+For the purposes of the video system, we'll refer to two types of cameras as
+.I perspectives\c
+\&.
+The world perspective is the camera that is used to render images directly above the background layer.
+Anything that is rendered under this camera will have its render position offset by the camera.
+The effect is that images are rendered
+.I relative to the camera.
+The HUD perspective is used to render images relative to the screen rather than the game world for the \
+sake of creating a HUD or UI.
+Visually, the images appear to "stick" to the screen much like an actual HUD would.
+.
+.FA void SetToWorldPerspective
+Switches to the world perspective.
+.FA void SetWorld int w int h
+Sets the dimensions of the world.
+.FA void SetToHUDPerspective
+Switches to the HUD perspective.
+.FA void SetHUD int w int h
+Sets the dimensions of the HUD region
+.FA SDL_Rect* GetCamera
+Returns the currently active camera.
+.FA void SetCameraPos int x int y
+Sets the position of the active camera to \c
+.IR x " and " y .
+.
+.TAG sh-desc_ss-gm
+.SS "Gamemode Manager"
+.PP
+The gamemode manager is used to manage and update the gamemode.
+By definition a gamemode is a self-contained section of the code that effects a certain part of the \
+game and that contributes to the look and feel of said game.
+For example, right now the only gamemode I have is the splash screen; but when this game is finished, \
+it will have a level gamemode (for when we're playing a level) and a pause gamemode (for when gameplay \
+is paused), among others.
+.PP
+The gamemode manager is implemented as a singleton class called
+.B PDGamemodeManager\c
+\&.
+To correctly use this manager, you must do the following:
+.IP 1
+Call
+.CW PDGamemodeManager::Init()\c
+\0once at the start of the program to set up the manager for the update loop later on.
+.IP 2
+Call
+.CW PDGamemodeManager::SetFirstGamemode()\c
+\0immediately after to set the beginning gamemode.
+.IP 3
+From now on, you can call
+.CW PDGamemodeManager::Update()
+\0during the application's update loop to enter the \
+gamemode manager's update loop.
+.IP 4
+At the end of the program, call
+.CW PDGamemodeManager::Shutdown()\c
+\0to free all resources that were allocated \
+for the gamemode manager.
+.
+\" start function list
+.PP
+.I Note: the functions listed are private and can only be accessed by PDGamemodeManager and PDApp.
+.
+.FA "static void" InitGamemode
+Restarts, unpauses, or starts a gamemode.
+The gamemode manager has multiple states that it can be in: if it is restarting the gamemode, \
+this function simply calls the gamemode's init subroutine.
+If the manager is resuming the gamemode from a paused state, the gamemode switches to the paused gamemode \
+and it's popped off the pause stack.
+Or if the previous gamemode has halted and switched to a new one, allocate memory for the new gamemode before \
+calling its init subroutine.
+.FA "static void" ChangeGamemode
+Pauses the current gamemode, resumes a previously paused gamemode, or switches from or restarts a gamemode.
+If the gamemode manager is pausing the current gamemode, it pushes it onto the pause stack.
+If resuming the gamemode, the manager shuts it down and frees it from memory.
+If not restarting the gamemode, the manager is switching to another; in which case it will just shut down
+and free the gamemode from memory.
+Additionally, the manager goes through the pause stack, shutting down gamemodes and freeing them, before \
+clearing the pause stack.
+If we are restarting the gamemode, the manager will simply shut it down.
+.FA "static void" Init "const PDGameData&" srcData
+Initializes the gamemode manager with the information found in
+.I srcData\c
+\&.
+It allocates a pointer to the shared game data provided to the function so that other parts of the game \
+can access it.
+Gamemode builders are registered with the manager.
+And several flags are initialized to mark the gamemode as changing.
+.FA "static void" Update
+This function contains a loop that necessarily represents a frame, because a timer is used to measure the length \
+of the frame.
+After starting or resetting the timer, reset inputs, update them, then update the object manager, gamemode pointer, \
+and then the video system.
+Pause the timer and get the length of the frame and subtract from it the maximum length of a frame.
+If the difference is negative, invert it as an argument to a sleep function to suspend execution for the rest of \
+the frame.
+.FA "static void" Shutdown
+Shut down the gamemode manager.
+Call this at the end of the program.
+Frees all memory directly used and/or allocated by the gamemode manager.
+Clears the pause stack.
+After this function, the other gamemode functions cannot be used before
+.CW PDGamemodeManager::Init()\c
+\0is called again.
+.
+.PP
+.I The following functions are public.
+.
+.FA "static bool" IsQuitting
+Returns true if the gamemode manager is quitting.
+.FA "static bool" IsRestarting
+Returns true if the manager is restarting a gamemode.
+.FA "static PDGameData&" GetGameData
+Returns the shared game data.
+.FA "static void" AddGamemode PDGamemodeType type PDGamemodeBuilder* builder
+Adds a gamemode builder to the manager.
+.AL
+.AO type
+An enumerated type of the gamemode to associate with the builder.
+.AO builder
+The gamemode builder.
+.LA
+.FA "static void" RemoveGamemode PDGamemodeType type
+Removes the specified gamemode from the manager.
+.FA "static void" ClearGamemodes
+Removes all gamemodes from the manager.
+.FA "static void" SetFirstGamemode PDGamemodeType type
+Call this function only once near the beginning of the program.
+Sets the initial gamemode.
+.FA "static void" SetNextGamemode PDGamemodeType type
+Sets the next gamemode.
+Causes the loop in
+.CW PDGamemodeManager::Update()\c
+\0to break, leading to the execution of
+.CW PDGamemodeManager::ChangeGamemode()\c
+\&.
+.FA "static void" PauseAndChangeGamemode PDGamemodeType next bool drawPaused
+Pauses the current gamemode and switches to a different one.
+Adds the gamemode to the pause stack so it can be resumed later.
+.AL
+.AO next
+Enumerated gamemode type.
+The gamemode must already be registered with the manager.
+.AO drawPaused
+A boolean flag that affects the video system.
+If true, the video system will continue to draw the components that belong to the paused \
+gamemode.
+.LA
+.FA "static void" Resume
+Resumes the previously paused gamemode.
+Should be called an equal number of times that
+.CW PDGamemodeManager::PauseAndChangeGamemode()\c
+\0was called.
+Removes the resumed gamemode from the pause stack and reverts the enviroment to that of the \
+resumed gamemode.
+.
+\" start a new section
+.TAG sh-desc_ss-obj
+.SS "Object Manager"
+.PP
+The object manager manages all objects in the game.
+An object by our definition is a self-contained piece of code that can move itself across the \
+screen; so by the definition, an object is a sprite.
+The object manager is represented as a singleton class called
+.B PDObjectManager\c
+\&.
+.IP *
+In order to use this class, you must do the following.
+.IP 1
+Call
+.CW PDObjectManager::Init()
+to initialize the object manager by registering all object prototypes, by registering component \
+builders, and by registering command builders.
+.IP 2
+Call
+.CW PDObjectManager::Update()
+once per frame to update all objects.
+.IP 3
+Call
+.CW PDObjectManager::Shutdown()
+to stop the manager and free all memory associated with it.
+.
+.FA "static void" Init
+Initializes the object manager by registering components, commands and object prototypes.
+After calling this function, any of the other functions may be used.
+Lastly, this function should only be called
+.I once
+in the program.
+.
+.FA "static void" Shutdown
+Shuts down the object manager, deleting all the objects and object prototypes in the manager.
+After this function, no other functions can be used.
+Also, this function can only be called once.
+.
+.FA "static void" Update float dt
+Updates every object.
+If an object is marked as "dead", it gets deleted and removed from the object list.
+.I dt
+is the time since the last frame in seconds.
+It is always less than 1.
+.
+.FA "static void" AddObject PDObject* obj
+Adds an object to the manager.
+That object will be updated along with the others.
+.
+.FA "static void" AddObjectType PDObjectType type "const char*" file
+Creates an object prototype of the given type.
+.AL
+.AO type
+A PDObjectType enumeration that tells the type of the object being added.
+.AO file
+A string path to an ini file that has configuration options for the prototype.
+.LA
+.
+.FA "static void" AddComponent PDComponentType type PDComponentBuilder* builder
+Registers a component builder with the manager, allowing it to create that type of \
+component.
+.AL
+.AO type
+A PDComponentType that tells which type of component to register with the manager.
+.AO builder
+A component builder that knows how to create the specific kind of component being \
+registered.
+.LA
+.
+.FA "static PDObject*" CreateObject PDObjectType type
+Looks for an object prototype associated with
+.I type
+and returns a clone of it to the caller.
+The returned object is also added to the manager as with PDObjectManager::AddObject().
+.
+.FA "static void" AddCommand PDCommandType type PDCommandBuilder* builder
+Adds a command builder to the manager, allowing it to create that command.
+.AL
+.AO type
+A PDCommandType enumeration that tells which command is being added.
+.AO builder
+A builder that knows how to create the given type of command.
+.LA
+.
+.FA "static PDCommand*" NewCommand PDCommandType type
+Creates a new command based on the
+.I type
+option provided.
+The command must have been added with PDObjectManager::AddCommand().
+.
+\" new subsection: logging system
+.TAG sh-desc_ss-log
+.SS LOGGING
+.PP
+The logging system is how Project Dewpsi prints diagnostic and error messages to the \
+screen, or to a file as the case may be.
+Some of the functions, like Log_Cout() and Log_Cerr(), will work only after
+.I Log_Init()
+is called.
+Functions and macros will be listed in the order that they appear in the header file log\.hpp.
+.
+.MACRO Log_Assert expr msg
+Use this macro to test a condition in the debug build.
+If
+.I expr
+evaluates as false,
+.I msg
+will be printed to stderr before aborting the program.
+It only works if the macro
+.CW NDEBUG
+is not defined.
+.
+.MACRO Log_Test expr
+Tests
+.I expr
+and prints whether it evaulates to true or not.
+It only works if the macro
+.CW NDEBUG
+is not defined.
+.
+.MACRO Log_Print expr
+Prints the value of
+.I expr\c
+\&.
+It only works if the macro
+.CW NDEBUG
+is not defined.
+.
+.MACRO Log_printf fmt ...
+Calls std::printf() with the arguments provided.
+It only works if the macro
+.CW NDEBUG
+is not defined.
+.
+.FA void Log_Init
+Opens two text files called cerr\.log and cout\.log.
+It has to be called before Log_Cout() and Log_Cerr().
+.
+.FA void Log_Cout "const std::string&" fmt args
+Printf-style output function that prints the given message and arguments \
+to a file.
+You must call Log_Init() prior to using this function.
+As with printf, the string argument will convert specifiers starting with '%' \
+with their corresponding argument.
+The following specifiers are currently supported:
+.TS
+tab(@);
+cc
+rr.
+\fBspecifier@Data Type\f[]
+%d@int
+%f@float
+%u@unsigned int
+%x@unsigned int <HEX format>
+%p@void* <printed as address>
+%s@const char*
+.TE
+.
+.FA void Log_Cerr "const std::string&" fmt args
+Printf-style output function that prints an error message to a file.
+The first argument is a string detailing the message.
+If specifiers are found in the string, they will be replaced with a \
+corresponding argument after the string.
+So the first specifier will be replaced with the first argument after
+.I fmt\c
+\&.
+You must call Log_Init() prior to using this function.
+Log_Cerr() supports the same specifiers as Log_Cout().
+.
+.FA void _Log_Assert "const bool" expr "const char*" msg "const char*" func "const char*" file "unsigned int" line
+This function works no matter if
+.CW NDEBUG
+is defined or not.
+It tests the given expression and prints a message to stderr and aborts execution if the expression \
+evaulates to false.
+.AL
+.AO expr
+The expression to test.
+.AO msg
+The message to explain what the error is.
+.AO func
+The name of the calling function as a string.
+.AO file
+The name of the source file.
+.AO line
+The line this function was called on in the source file.
+.LA
+.
+.FA void _Log_Test "const bool" expr "const char*" testname
+Tests the condition
+.I expr
+and prints two lines of output: the first line is
+.I testname
+and the second is whether or not the expression is true.
+.
+.
+.
+.SH "Math Functions"
+.PP
+Functions are enclosed with the
+.B math
+namespace.
+All math functions are listed here.
+.FA "template<typename T> T" abs T value
+Returns the absolute value.
+Accepts any type that supports the
+.IR "< comparision operator " "and the " "unary - operator" .
+.FA "template<typename T> T" sign T value
+Returns the sign of the value, -1 if negative, 1 otherwise.
+.FA float approach float a float b float delta
+Incrementally scales
+.IR a " toward " b " at a rate of " delta
+and returns the result.
+.FA double deg2rad double degrees
+Converts degrees to radians.
+.FA double rad2deg double radians
+Converts radians to degrees.
+.FA "unsigned int" dec unsigned val unsigned dec
+Incrementally scales
+.IR val " down toward zero at a rate of " dec
+and returns the result.
+.FA "unsigned int" inc unsigned val unsigned inc unsigned cap
+Incrementally scales
+.IR val " toward " cap " at a rate of " val
+and returns the result.
+.FA "template<typename T> T" clamp T val T low T high
+Forces
+.I val
+between a low and high value.
+.FA int atoi "const std::string&" val
+Converts a string to an integer.
+.
+.SH "Data Types"
+.PP
+This section defines all the user-defined data types that are used in Project Dewpsi.
+.
+.NEWTYPE JColor struct
+A struct that contains the red, green, blue, and alpha components of a color.
+.TS
+tab(@) allbox;
+cc
+ll.
+\fBName\f[]@\fBType\f[]
+red@uint8_t
+green@uint8_t
+blue@uint8_t
+alpha@uint8_t
+.TE
+.
+.NEWTYPE PauseInfo<pdgamemodemanager\.cc> struct
+A struct that can only be found in pdgamemodemanager\.cc and is only accessible to functions inside it.
+The struct contains the following:
+.TS
+tab(@) allbox;
+cc
+ll.
+\fBName\f[]@\fBType\f[]
+pGamemode@PDGamemode*
+type@PDGamemodeType
+.TE
+.
+.NEWTYPE PDCommand struct
+An ADT base class that defines a command.
+There is a single method called
+.B DoAction().
+Derivations of this class will implement this method to give them unique \
+roles in the code.
+PDCommand has its own manual page where we go into more detail.
+.
+.NEWTYPE PDCommandBuilder struct
+An ADT base class that represents how to create a new command object.
+It contains a single method,
+.I Build(),
+which returns a pointer to PDCommand.
+.
+.NEWTYPE PDCommandTBuilder struct
+A class template which derives from PDCommandBuilder.
+The template has one parameter, the type of pointer to return \
+from the Build() method.
+The type must be derived from PDCommand.
+.
+.NEWTYPE PDCommandType pod
+An enumerated integer type that symbolizes a command type.
+It is defined in pdcommandtype\.h.
+The enumerations of this type are formatted as such: a word with its first letter \
+made uppercase, prefixed with
+.CW PDCmd_\c
+\&.
+.
+.NEWTYPE PDComponent struct
+An ADT base class that defines a component of an object.
+PDComponent has the following members:
+.TS
+tab(@) allbox;
+ccc
+lll.
+\fBName@Type@Scope\f[]
+m_id@int@private
+m_type@PDComponentType@private
+s_compIdCounter@static int@private
+m_parent@PDObject*@protected
+m_isDead@bool@public
+.TE
+.
+.NEWTYPE PDComponentBuilder struct
+An ADT base class that represents how to build a component with just an enumerated integer.
+It contains a single method,
+.B Build()\c
+\&, which returns a pointer to PDComponent.
+.
+.NEWTYPE PDComponentTBuilder struct
+A template class that's derived from PDComponentBuilder.
+The template parameter has to be derived from PDComponent.
+The method Build() is defined by this class, and it returns a pointer to the type \
+specified in the template.
+.
+.NEWTYPE PDComponentType pod
+An enumerated integer that symbolizes a component type.
+The enumeration is defined in the header pdcomponenttype\.h.
+The values are words with their first letters uppercased, prefixed with
+.CW PDC_\c
+\&.
+.
+.NEWTYPE PDFactory struct
+A template class that holds a list of builders that help with allocating pointers \
+to certain types.
+The template parameters are EnumType, BuilderType and ReturnType.
+.I EnumType
+refers to an enumeration that will be used to symbolize which builder to associate \
+with which return type.
+Speaking of which,
+.I ReturnType
+is the type to allocate a pointer to when
+.I BuilderType\c
+\&\(aqs \fBBuild()\f[] method is called.
+Use PDFactory::Build() to allocate a pointer to
+.I ReturnType\c
+\&.
+.
+.NEWTYPE PDGamemode struct
+An ADT base class that defines three methods: Init(), Update(), and Shutdown().
+PDGamemode is the main cog in the machine that is the gamemode manager: it controls \
+what goes on during the frame.
+.
+.NEWTYPE PDGamemodeBuilder struct
+An ADT base class representing how to build a PDGamemode.
+Contains a single method,
+.B Build(),
+which returns a PDGamemode pointer.
+.
+.NEWTYPE PDGamemodeTBuilder struct
+A template class derived from PDGamemodeBuilder.
+Used by the gamemode manager to mass-produce deriviations of the base class \
+PDGamemodeBuilder for each gamemode.
+The template itself has one paramter, the name of the deriviation of PDGamemode \
+that will be created by this builder.
+.
+.NEWTYPE PDGamemodeType pod
+An enumerated integer type that symbolizes a gamemode.
+It is defined in the header pdgamemodetypes\.h, where each enumeration is a word \
+with its first letter uppercased, and is prefixed with
+.CW PDGM_\c
+\&.
+.
+.NEWTYPE PDGameData struct
+A struct that contains shared game data.
+.TS
+tab(@) allbox;
+cc
+ll.
+\fBName\f[]@\fBType\f[]
+fps@unsigned int
+ticks@unsigned int
+sec@float
+width@unsigned int
+height@unsigned int
+.TE
+.
+.NEWTYPE PDObject struct
+A class that defines an object's properties and what it can do.
+The classes PDApp and PDGamemodeManager are friends of PDObject, meaning they can access \
+any part of it.
+PDObject has its own manual page to explain how it works.
+.TS
+tab(@) allbox;
+ccc
+lll
+ll^
+ll^
+ll^
+lll
+ll^.
+\fBname@type@scope\f[]
+m_components@CompVect@private
+m_type@PDObjectType@
+m_id@int@
+s_objectIDCounter@static int@
+m_pos@Point<int>@public
+m_vel@PVector<float>@
+m_isDead@bool@
+.TE
+.
+.NEWTYPE PDObjectType pod
+An enumerated integer that symbolizes an object type.
+Used by the object manager to numerically sort prototypes in an internal hash table, with \
+the enumerations being used like integers to calculate hash values.
+This enumeration is defined in the header pdobjecttype\.h.
+Values of this type are prefixed with
+.CW PDOT_
+and the first letter after the prefix is captialized.
+.
+.NEWTYPE PDTexture struct
+A class that defines how to load images and render them to the screen.
+Due to the size of this class, PDTexture has a manual page of its own.
+.
+.PP
+PDCommand, PDComponent and PDGamemode are ADT base classes, which means they cannot be used.
+Instead another class must derive from it and implement all virtual methods that were \
+declared in the base class.
+.PP
+PDCommand, PDComponent, PDFactory, PDIniFile, PDObject, and PDTexture all have their own \
+separate manual pages.
+.
+.SH BUGS
+.PP
+This build has not yet been bug-tested, so bugs have not been found.
+.
+.SH AUTHOR
+.PP
+All code was written by John Russell.
+However, the object manager, gamemode manager, factory class, object class, and all other related code were \
+written with the advice gotten from \c
+.URL "https://www.packtpub.com/game-development/game-development-patterns-and-best-practices" \
+"Game Development Patterns And Best Practices" ", which was published by Packt Publishing Limited."
+.
+.SH "SEE ALSO"
+.SEE textures 7 ini-file 7 factory 7 object 7 commands 7

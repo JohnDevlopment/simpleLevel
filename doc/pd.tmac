@@ -1,44 +1,121 @@
+.mso www.tmac \" HTML macros
 .ig
 This macro package was created on Friday November 22, 2019, by John Russell.
 This macro package is part of the Project Dewpsi Development Manual setup.
 ..
-.
-.
 \" skip if package already loaded
 .if r mPD .nx
+\" define globals
 .nr mPD 1
-.
-.
-\"	#FA type name [type name ...] [tag] - define a function; an odd-numbered final argument is turned into "tag..."
-.de1 FA
-.sp \\n[PD]u
-.if \\n[.$] \{\
-.  in 0
-.  if !\\n[an-div?] \{\
-.    ll -\\n[an-margin]u
-.    di an-div
-.  \}
-.  nr an-div? 1
-.  it 1 an-trap
-.  ds my-result \,\f[B]\\$1\~\\$2\f[R]\/(
-.  shift 2
-.  while (\\n[.$] >= 2) \{\
-.    as my-result \,\f[B]\\$1\~\f[I]\/\\$2\f[R]
-.    ie (\\n[.$] > 2) \{\
-.      as my-result ,\~
-.    \}
+\"	#CW text - renders the string in CW font
+.de CW
+.it 1 an-trap
+.ft CW
+.if \\n(.$ \&\\$*
+..
+\"	#CWR [args...] - alternate between CW font and R font for the arguments
+.de1 CWR
+.if \\n(.$ \{\
+.  ds an-result \&\f[CW]\\$1\fR
+.  shift
+.  while \\n(.$ \{\
+.    as an-result \/\\$1\f[CW]\,\\$2\fR
 .    shift 2
 .  \}
-.  if (\\n[.$] == 1) .as my-result \\$1.\|.\|.
-.  as my-result \f[R])
-.  nop \\*[my-result]
-.  ft R
+. nop \\*[an-result]
+. ft R
 .\}
+..
+\"	#NH - temporarily disable hypenation for the next input line
+.de NH
+.it 2 an-trap
+.do nr an-nh \\n[.hy]
+.nh
+..
+.ig
+\"	#CS - start code block
+.als EX CS
+\"	#CE - end code block
+.asl EE CE
+..
+\"	#FA type name [type name ...] [tag] - define a function; tag turns into '...'
+.de1 FA
+.sp \\n[PD]u
+.ne (2v + 1u)
+.in 0
+.nf
+.nr mE \\n(.f
+.if (\\n[.$] > 1) \{\
+.  ds pd-result \,\fB\\$1\~\\$2\fR\/(
+.  shift 2
+.  while (\\n[.$] >= 2) \{
+.    as pd-result \,\fB\\$1\~\fI\\$2\fR
+.    if (\\n[.$] > 2) .as pd-result \/,\~
+.    shift 2
+.  \}
+.  if \\n[.$] .as pd-result .\|.\|.
+.  as pd-result \fR)
+.  TP
+.  nop \\*[pd-result]
+.  fi
+.  ft \\n(mE
+.\}
+..
+.
+\"	#AL - start a list of arguments
+.de1 AL
+.sp \\n[PD]u
+.ie !\\n[mS] \{\
+.  nr mS 1
+.  nh
+.  nr mA \\n(.j
+.  ad l
+.  nr mI \\n(.i
+.\}
+.el \{\
+.  br
+.  ns
+.\}
+.INDENT
+.B Arguments
+..
+.
+\"	#AO name [default_value] - list an argument and what it does
+.de1 AO
+.if \\n(.$ \{\
+.  sp \\n(PDu
+.  it 1 an-trap
+.  nr an-break-flag 1
+.  nop \fI\\$1\fR
+.  if (\\n[.$] > 1) \{\
+.    nop \~<\\$2>
+.  \}
+.\}
+..
+\"	#LA - end argument list
+.de LA
+.nr mS 0
+.hy \\n(HY
+.ad \\n(mA
+.in \\n(mI
+..
+\"	#INDENT [in] - start indented paragraph
+.de1 INDENT
+.ps \\n[PS]u
+.vs \\n[VS]u
+.ft R
+.sp \\n[PD]u
+.ne (1v + 1u)
+.if \\n(.$ .nr an-prevailing-indent (n;\\$1)
+.in (\\n[an-margin]u + \\n[an-prevailing-indent]u)
+.DEVTAG-COL 1
+.nr need_col2 1
+.ns
 ..
 \"	#MACRO name [args ...] - define a C/C++ macro
 .de MACRO
 \" this code from here to END is copied from the man package's .TP macro
-.sp \\n[PD]
+.sp \\n(PDu
 .in 0
 .if !\\n[an-div?] \{\
 .  ll -\\n[an-margin]u
@@ -47,28 +124,86 @@ This macro package is part of the Project Dewpsi Development Manual setup.
 .nr an-div? 1
 .it 1 an-trap
 \" END
-.ds my-result \fB#define\~\\$1\fR(
+.ds pd-result \fB#define\~\\$1\fR(
 .shift
 .while !"\\$1"" \{\
-.  as my-result \fI\\$1\fR
+.  as pd-result \fI\\$1\fR
 .  if "\\$1"..." .break
-.  if !"\\$2"" .as my-result ,\~
+.  if !"\\$2"" .as pd-result ,\~
 .  shift
 .\}
-.as my-result )
-.nop \\*[my-result]
+.as pd-result )
+.nop \\*[pd-result]
 ..
-.
-\"	#PRIVATE [name] - mark a function or method as private
-.de PRIVATE
-.ds my-result \fBNote:\fP\~
-.ie !"\\$1"" .as my-result \\$1
-.el .as my-result this\~function
-.as my-result \~is\~marked\~as\~private.
-.nop \\*[my-result]
+\"	#SEE tag section [tag section...] - output a list of see-also tags
+.de SEE
+.if \\n[.$] \{\
+.  ds pd-result \,\fB\\$1(\\$2)\fR
+.  shift 2
+.  while (\\n[.$] >= 2) \{\
+.    as pd-result ,\~\,\fB\\$1(\\$2)\fR
+.    shift 2
+.  \}
+.\}
+.nop \\*[pd-result]
+.rm pd-result
 ..
-.
-\"	#DEBUG - output a line that says "this macro/function is debug-only"
-.de DEBUG
-.nop This macro only works in the debug build.
+\"	#NEWTYPE name [type] - lists a type
+.de NEWTYPE
+.do if !\\n[.color] .color \" enable colors
+.if !m clPod \
+.  defcolor clPod rgb #31A100
+.if !m clStruct \
+.  defcolor clStruct rgb #B10000
+\" if $2 == "", color = Pod
+.ie '\\$2'' \{\
+.  ds \\$0:color clPod
+.\}
+.el \{\
+." if $2 == pod, color = pod
+." else if $2 == struct, color = struct
+.  ie '\\$2'pod' \
+.    ds \\$0:color clPod
+.  el \{\
+.    if '\\$2'struct' \
+.      ds \\$0:color clStruct
+.  \}
+.\}
+." print string if non-empty
+.if !'\\$1'' \{\
+." print \m[$0:color]$1\m[]
+.  TP
+.  B \m[\\*[\\$0:color]]\\$1\m[]
+.\}
+." remove string register
+.if r \\$0:color \
+.  rm \\$0:color
+..
+\"	#an-trap - redefined trap procedure
+.de1 an-trap
+.  if \\n[need_eo_h]>0 .DEVTAG-EO-H
+.  nr need_eo_h 0
+.  if \\n[need_col2]>0 .DEVTAG-COL 2
+.  nr need_col2 0
+.  ft R
+.  ps \\n[PS]u
+.  vs \\n[VS]u
+.  if \\n[an-break-flag] \{\
+.    brk
+.    nr an-break-flag 0
+.  \}
+.  if \\n[an-no-space-flag] \{\
+.    ns
+.    nr an-no-space-flag 0
+.  \}
+.  if \\n[pd-indent] \{
+.    ti \\n[pd-indent]u
+.    nr pd-indent 0
+.  \}
+." enable hypenation again
+.  if \\n[an-nh] \{\
+.    hy \\n[an-nh]
+.    nr an-nh 0
+.  \}
+.  if \\n[an-div?] .an-do-tag
 ..

@@ -1,12 +1,12 @@
 .mso pd.tmac
 \" start manual page
-.TH PDInifile 7 11/21/19 "" "Project Dewpsi Development Manual"
+.TH PDIniFile 7 11/21/19 "" "Project Dewpsi Development Manual"
 .SH NAME
-PDInifile \- class that reads and parses INI files
+PDIniFile \- class that reads and parses INI files
 .
 .SH DESCRIPTION
 .PP
-.B PDInifile
+.B PDIniFile
 is a C++ class that implements reading of ini files. \c
 There are only two public functions, \c
 .BR ReadFile " and " SetToSection .
@@ -32,7 +32,10 @@ bbox = 3 2 10 10
 .
 .SS "Class Methods"
 .FA void ReadFile "const std::string&" file
-Reads an ini \fIfile\fP and constructs a map of it in memory.
+Reads
+.I file
+and reads it into memory as an ini file.
+.
 .FA void SetToSection "const std::string&" sec
 Goes to the section \fIsec\fP in the ini file.
 .FA "template<typename T> void" GetValue "const std::string&" key T& val
