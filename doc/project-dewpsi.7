@@ -1,12 +1,13 @@
-\" t
-.mso pd.tmac \" Project Dewpsi macros
-.TH "Project Dewpsi" 7 "11/15/19" "" "Project Dewpsi Development Manual"
+.mso pd.tmac
+.TH ProjectDewpsi 7 11/15/19 "" "Project Dewpsi Development Manual"
 .SH NAME
-Project Dewpsi \- official Project Dewsi game engine
+ProjectDewpsi \- beta game engine
 .
 .SH DESCRIPTION
 .PP
-This manual covers the underlying engine of \fBProject Dewpsi\fP.
+This manual covers the underlying engine of
+.B Project Dewpsi\c
+\&.
 The engine is split into seven major systems:
 \" start list of internal links to subheadings
 .IP *
@@ -516,41 +517,55 @@ and prints two lines of output: the first line is
 .I testname
 and the second is whether or not the expression is true.
 .
-.
-.
 .SH "Math Functions"
 .PP
-Functions are enclosed with the
+Functions are defined in the
 .B math
 namespace.
 All math functions are listed here.
+.
 .FA "template<typename T> T" abs T value
 Returns the absolute value.
-Accepts any type that supports the
-.IR "< comparision operator " "and the " "unary - operator" .
+Accepts any integral type that supports the comparison operators.
+.
 .FA "template<typename T> T" sign T value
-Returns the sign of the value, -1 if negative, 1 otherwise.
+Returns -1 or 1 depending on the sign of
+.I value.
+Passing 0 results in 1 being returned.
+.
 .FA float approach float a float b float delta
-Incrementally scales
-.IR a " toward " b " at a rate of " delta
-and returns the result.
+Adds
+.IR delta " to " a " but caps it at " b .
+.AL
+.AO a
+The initial value in the progression.
+.AO b
+The maximum value in the progression.
+.AO delta
+The value added to a.
+.LA
+.
 .FA double deg2rad double degrees
 Converts degrees to radians.
+.
 .FA double rad2deg double radians
 Converts radians to degrees.
-.FA "unsigned int" dec unsigned val unsigned dec
-Incrementally scales
-.IR val " down toward zero at a rate of " dec
-and returns the result.
-.FA "unsigned int" inc unsigned val unsigned inc unsigned cap
-Incrementally scales
-.IR val " toward " cap " at a rate of " val
-and returns the result.
+.
 .FA "template<typename T> T" clamp T val T low T high
-Forces
-.I val
-between a low and high value.
-.FA int atoi "const std::string&" val
+Keeps a value within range.
+.AL
+.AO val
+The value to clamp.
+.AO low
+The minimum value in the range.
+.AO high
+The maximum value in the range.
+.LA
+.
+.FA int atoi "const std::string&" str
+Converts a string to an integer.
+.
+.FA int atoi "const char*" str
 Converts a string to an integer.
 .
 .SH "Data Types"
@@ -736,6 +751,17 @@ and the first letter after the prefix is captialized.
 A class that defines how to load images and render them to the screen.
 Due to the size of this class, PDTexture has a manual page of its own.
 .
+.NEWTYPE Point struct
+Alias of PVector.
+.
+.NEWTYPE PVector
+A class template that has two data members, _x and _y.
+They are of type
+.CW ValueType\c
+\&, which is the type named in the template paramter.
+PVector has its own manual page.
+.
+.SS Notes
 .PP
 PDCommand, PDComponent and PDGamemode are ADT base classes, which means they cannot be used.
 Instead another class must derive from it and implement all virtual methods that were \
@@ -757,4 +783,7 @@ written with the advice gotten from \c
 "Game Development Patterns And Best Practices" ", which was published by Packt Publishing Limited."
 .
 .SH "SEE ALSO"
-.SEE textures 7 ini-file 7 factory 7 object 7 commands 7
+.SEE textures 7 ini-file 7
+.PP
+To see the technical documentation for things like PDFactory, PDCommand, and other classes, see \
+pd-tech\.pdf/\.ps/\.man.
