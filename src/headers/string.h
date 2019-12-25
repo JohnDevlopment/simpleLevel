@@ -21,7 +21,9 @@
 #define String_strlcpy	SDL_strlcpy
 #define String_strcpy	std::strcpy
 #define String_strchr	std::strchr
+#define String_strrchr	std::strrchr
 #define String_strlen	std::strlen
+#define String_sprintf	std::sprintf
 
 // returns how many of <findchar> are inside the string <str>
 size_t String_CharCount(const char* str, int findchar);

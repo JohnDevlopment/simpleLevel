@@ -1,0 +1,24 @@
+#ifndef POINTVECTOR_INCLUDED
+#define POINTVECTOR_INCLUDED
+
+#if defined(__cplusplus) || __cplusplus >= 201103L
+  #include "pointvector_decl.hpp" // declarations of both PVector and Point
+  #include "custom/bits/pointvector_funcs.txx" // functions for PVector
+#else
+  #error "This header is written in C++ and needs C++11 or above to work."
+#endif
+
+#ifdef __cplusplus
+  #if __cplusplus >= 201103L
+    template<class ValueType> using Point = PVector<ValueType>;
+  #endif
+#endif
+
+template<typename T>
+Point<T> make_point(T x, T y) {
+	Point<T> retval(x, y);
+	
+return retval;
+}
+
+#endif /* POINTVECTOR_INCLUDED */

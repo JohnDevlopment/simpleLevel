@@ -4,32 +4,35 @@
 // C++ standard IO
 #include <iostream>
 
-// C standard IO
-#include <cstdio>
-
-// standard C library main
+// standard C library
 #include <cstdlib>
 
-// C standard library string functions
+// standard C IO functions
+#include <cstdio>
+
+// standard C library string-related functions
 #include <cstring>
 
 // StaticDArray class; good for statically defined but dynamically allocated arrays
-#include <arrays.hpp>
+#include "arrays.hpp"
 
 // assertions
 #include <cassert>
 
-// memory header
+/* memory header: explicitly defines new and delete,
+   and also enables nothrow (std namespace) */
 #include <memory>
 
-// sizes of basic types
+// size and min/max value of athrihmetic and pointer types
 #include <climits>
 
-// other types defined here
+// standard types used in standard C library
 #include <cstdint>
 
-#define totype(src, type) reinterpret_cast<type>(src)
+// standard exceptions
+#include <stdexcept>
 
+// cast to another type
 #if defined(__cplusplus)
   #if __cplusplus >= 201103L
     #define cast(src, type) reinterpret_cast<type>(src)

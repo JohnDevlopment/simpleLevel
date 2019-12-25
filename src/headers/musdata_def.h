@@ -2,7 +2,7 @@
 #define MUSDATA_DEF_H_INCLUDED
 
 #include <iostream>
-#include <bad_option>
+#include "bad_option"
 #include "stdinc.h"
 #include "sdl_incs.h"
 #include "sound/sound_wav.h"

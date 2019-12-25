@@ -1,14 +1,9 @@
 #ifndef EVENT_HPP
 #define EVENT_HPP
 
-// standard library headers
 #include "stdinc.h"
-
-// SDL headers
 #include "sdl_incs.h"
-
-// gamemode data and functions
-#include "gamemode.hpp"
+#include "pdgamemode.h"
 
 /* Process events from the event struct. This should be called in the middle of a while loop that's calling SDL_PollEvent of the event struct.
    Pass a gamemode struct in case you want events that could potentially affect the gamemode routine or actually change the gamemode.

@@ -10,53 +10,85 @@
 // iostream and utility functions
 #include <iostream>
 #include <utility>
+#include <sstream>
 
 // points and vectors
-#include <pointvector>
+#include "pointvector"
 
 // function attributes
 #include "global_attributes.hpp"
 
+namespace math {
+	template<typename T>
+	T abs(T value) {
+		return (value < 0) ? static_cast<T>(-value) : value;
+	}
+	
+	template<typename T>
+	T sign(T value) {
+		return (value < 0) ? -1 : 1;
+	}
+	
+	// creeps the value of A up to B in increments of delta and returns the result
+	float approach(float a, float b, float delta);
+	
+	// lineraly interpolates between a & b
+	INLINE int8_t lerp(int8_t a, int8_t b, float c) {
+		return static_cast<int8_t>(a + (b - a) * c);
+	}
+	
+	INLINE float lerp(float a, float b, float c) {
+		return a + (b - a) * c;
+	}
+	
+	// converts angular degrees into radians
+	double deg2rad(double degrees);
+
+	// converts angular units radians to degrees
+	double rad2deg(double radians);
+
+	// returns val subtracted by dec without it underflowing
+	unsigned int dec(unsigned val, unsigned dec); // TODO delete function
+
+	// returns val added to inc without it going over the cap
+	unsigned int inc(unsigned val, unsigned inc, unsigned cap); // TODO delete function
+	
+	// forces the value between a high and a low range
+	template<typename T>
+	T clamp(T val, T low, T high) {
+		if (val < low) return low;
+		else if (val > high) return high;
+		
+		return val;
+	}
+	
+	// change a string to an integer
+	INLINE int atoi(const std::string& str) {
+		return std::atoi( str.c_str() );
+	}
+	INLINE int atoi(const char* str) {
+		return std::atoi(str);
+	}
+	
+	// converts seconds to milliseconds
+	INLINE int sec2ms(float ms) {
+		return static_cast<int>(ms * 1000);
+	}
+	
+	// converts milliseconds to frames
+	INLINE int ms2frames(int ms, int fps = FPS) {
+		return fps * ms / 1000;
+	}
+}
+
 // converts miliseconds to frames
-INLINE int Ms2Frames(int ms) {
-	return FPS * ms / 1000;
-}
+//INLINE int Ms2Frames(int ms) {
+//	return FPS * ms / 1000;
+//}
 
-// return -1 if negative and 0 if positive
-int ReturnSign(int val);
-
-// applies linear interpolation to point a in increments of step toward point b and returns the result
-float LinearInterp(float a, float b, float step);
-
-// creeps the value of A up to B in increments of delta and returns the result
-float Approach(float a, float b, const float delta);
-
-// converts angular degrees into radians
-double Deg2Rad(double degrees) ATTR_CONST;
-
-// return the absolute value of an integer
-int Abs(int value);
-short int Abs(short int value);
-long int Abs(long int value);
-
-// returns 1 if the value is less than 1
-float at_least_one(float base);
-
-// returns val subtracted by dec without it underflowing
-unsigned int Dec(unsigned int val, const unsigned int dec);
-
-// returns val added to inc without it going over the cap
-unsigned int Inc(unsigned int val, const unsigned int inc, const unsigned int cap);
-
-// reverses the order of bytes in a single 32-bit integer
-uint32_t Swap32bit(uint32_t value);
-
-// reverses the order of four 8-bit integers in an array as if it were a 32-bit integer
-void Swap32bit(uint8_t* pValues);
-
-// calculates a delta
-INLINE float CalcDelta(float fps, float acc) {
-	return (1.0f / fps) * (acc + 1);
-}
+//// calculates a delta
+//INLINE float CalcDelta(float fps, float acc) {
+//	return (1.0f / fps) * (acc + 1);
+//}
 
 #endif /* MATH_HPP_INCLUDED */

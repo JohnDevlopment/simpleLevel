@@ -1,8 +1,16 @@
 #ifndef COLOR_H_INCLUDED
 #define COLOR_H_INCLUDED
 
-#include <iostream>
-#include <custom/bits/image_class_defines.hpp>
+// engine headers
+#include "stdinc.h"
+#include "endian.hpp"
+#include "macros.h"
+
+// color bytes
+#define RED_CHANNEL(val)			(val & 0xff000000)
+#define BLUE_CHANNEL(val)			(val & 0x00ff0000)
+#define GREEN_CHANNEL(val)			(val & 0x0000ff00)
+#define ALPHA_CHANNEL(val)			((char) val)
 
 struct JColor {
 	uint8_t red;
@@ -12,11 +20,8 @@ struct JColor {
 };
 
 inline JColor ReturnJColor(uint32_t color) {
-	JColor retval = {0};
-	retval.red    = RED_CHANNEL(color);
-	retval.green  = GREEN_CHANNEL(color);
-	retval.blue   = BLUE_CHANNEL(color);
-	retval.alpha  = ALPHA_CHANNEL(color);
+	uint8_t* rgba = (uint8_t*) &color;
+	JColor retval = {rgba[0], rgba[1], rgba[2], rgba[3]};
 	
 return retval;
 }
@@ -28,7 +33,9 @@ return retval;
 }
 
 inline uint32_t JColor2Int(const JColor& color) {
-	return RGBTOUINT32(color.red, color.green, color.blue);
+	uint8_t rgba[] = {color.red, color.green, color.blue, color.alpha};
+	
+return *reinterpret_cast<uint32_t*>(rgba);
 }
 
 #endif /* COLOR_H_INCLUDED */

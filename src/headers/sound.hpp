@@ -3,10 +3,9 @@
 
 #include <iostream>
 #include <initializer_list>
-#include <levelLoad.hpp>
-#include <bad_option>
 #include <climits>
-
+#include "levelLoad.hpp"
+#include "bad_option"
 #include "global_attributes.hpp"
 
 // relevent types
@@ -31,6 +30,9 @@ bool Sound_Init(int freq, uint16_t format, int ch, int chunksize) COLD;
 // close the sound system
 void Sound_Quit() COLD;
 
+// returns true if the sound system is active
+bool Sound_Active();
+
 //////////////////////// these functions manipulate MusData /////////////////////////
 
 /*
@@ -47,7 +49,7 @@ on failure. 'type' works the same way as with Sound_LoadMUSType_RW. Sound_LoadMU
 creates a RWops to the given file and then forwards it to Sound_LoadMUSType_RW and
 passes 'freesrc' as 1. Check the above paragraph for more info.
 */
-MusData* Sound_LoadMUS(const char* src); // TODO add description
+MusData* Sound_LoadMUS(const char* src);
 MusData* Sound_LoadMUSType_RW(SDL_RWops* rw, MUS_Type type, int freesrc);
 MusData* Sound_LoadMUSType(const char* src, MUS_Type type);
 

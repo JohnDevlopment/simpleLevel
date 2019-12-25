@@ -1,0 +1,43 @@
+#ifndef _BAD_OPTION_INCLUDED
+#define _BAD_OPTION_INCLUDED
+
+#include <iostream>
+#include <exception>
+#include <cstring>
+
+#define DEFAULT_STRING	"Bad option passed to function"
+
+class bad_option : public std::exception {
+	char* Text;
+	
+	public:
+	
+	// construct the default exception
+	bad_option() {
+		Text = new char [std::strlen(DEFAULT_STRING)+1];
+		std::strcpy(Text, DEFAULT_STRING);
+	}
+	
+	// construct an exception with a custom message
+	bad_option(const char* _str) {
+		size_t szLen = std::strlen(DEFAULT_STRING) + std::strlen(_str) + 1;
+		Text = new char[szLen];
+		
+		std::strcpy(Text, DEFAULT_STRING);
+		std::strcat(Text, _str);
+	}
+	
+	// construct a copy of the given exception class
+	bad_option(const bad_option& _e) {
+		Text = new char [std::strlen(_e.Text)+1];
+		std::strcpy(Text, _e.Text);
+	}
+	
+	// delete
+	~bad_option() throw() {delete[] Text;}
+	
+	// return message
+	const char* what() const noexcept {return Text;}
+};
+
+#endif /* _BAD_OPTION_INCLUDED */

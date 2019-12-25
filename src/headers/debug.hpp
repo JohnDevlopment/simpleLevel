@@ -1,8 +1,9 @@
 #ifndef DEBUG_HPP_INCLUDED
 #define DEBUG_HPP_INCLUDED
 
-#include <iostream>
-#include <cstdio>
+// engine headers
+#include "stdinc.h"
+#include "log.hpp"
 
 // should be included in one source file at a time, in order to debug
 #ifdef USE_DEBUG_PRINT
@@ -29,9 +30,13 @@ static auto DEBUG_PRINT = [](const char* func, const char* message, int ln) -> v
 #ifndef NDEBUG
  #define PRINT_LINE(os) std::os << "File: " << __FILE__ << "\nLine: " << __LINE__ << '\n'
  #define PRINT_EXPR(os,e) std::os << #e << " = " << e << '\n'
+ #define CHECK_FUNC(x) static int s_iCounter = 0; \
+                       ++s_iCounter; \
+                       Log_Assert(s_iCounter == (x), "This function should only be called once");
 #else
  #define PRINT_LINE(os)
  #define PRINT_EXPR(os,e)
+ #define CHECK_FUNC(x)
 #endif
 
 #endif /* DEBUG_HPP_INCLUDED */
