@@ -1,18 +1,18 @@
-#include "pdexitcmd.h"
+#include "exitcmd.h"
 #include "log.hpp"
 #include "game.hpp"
 #include "pdgamemodemanager.h"
 
-PDExitCmd::PDExitCmd()
+ExitCmd::ExitCmd()
 {
 
 }
 
-PDExitCmd::~PDExitCmd()
+ExitCmd::~ExitCmd()
 {
 
 }
 
-void PDExitCmd::DoAction() {
+void ExitCmd::DoAction() {
 	PDGamemodeManager::Quit();
 }
