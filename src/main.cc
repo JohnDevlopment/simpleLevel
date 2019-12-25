@@ -11,7 +11,6 @@
 #include "log.hpp"
 #include "pdgamemode.h"
 #include "windows_or_linux.hpp"
-#include "pdexitcmd.h"
 #include "pdapp.h"
 #include "pdinifile.h"
 
@@ -22,12 +21,6 @@
 static void initializePDApp() COLD;
 
 using namespace std;
-
-namespace game {
-	Bitfield<uint16_t> Flags;
-	uint8_t FrameCounter = 0;
-	PDExitCmd* Shutdown = nullptr;
-}
 
 static PDInitData _InitData;
 

@@ -3,6 +3,8 @@
 #include <stack>
 #include "registerpdgamemodetypes.h"
 #include "math.hpp"
+#include "input.hpp"
+#include "global_attributes.hpp"
 
 namespace {
 	struct PauseInfo {
@@ -27,6 +29,22 @@ namespace {
 
 PDGameData* PDGamemodeManager::s_gameData = nullptr;
 
+// TODO add PDPhy::word() after PDObjectManager::Resume()
+#define actSystems(word) \
+	PDObjectManager::word(); \
+	video::word();
+
+// TODO add PDPhy::Resume() after PDObjectManager::Resume()
+#define clearPauseStack() \
+	while ( ! _PauseStack.empty() ) {\
+	  PDObjectManager::Resume(); \
+	  video::Resume(); \
+	  PauseInfo pi = _PauseStack.top(); \
+	  pi.pGamemode->Shutdown(); \
+	  delete pi.pGamemode; \
+	  _PauseStack.pop(); \
+	}
+
 // private
 /**************************************************/
 /* InitGamemode
@@ -43,9 +61,7 @@ void PDGamemodeManager::InitGamemode() {
 	}
 	else if (_IsResuming) {
 	  // resume normal operations
-	  PDObjectManager::Resume();
-//	  PDPhy::Resume(); // TODO implement class and method
-	  video::Resume();
+	  actSystems(Resume);
 	  
 	  // change flags
 	  _IsResuming = false;
@@ -82,9 +98,7 @@ void PDGamemodeManager::InitGamemode() {
 void PDGamemodeManager::ChangeGamemode() {
 	if (_IsPausing) {
 	  // pause engines
-	  PDObjectManager::Pause();
-//	  PDPhy::Pause(); // TODO implement this
-	  video::Pause();
+	  actSystems(Pause);
 	  
 	  // add to pause stack
 	  PauseInfo pi(_Gamemode, _CurrMode);
@@ -101,17 +115,7 @@ void PDGamemodeManager::ChangeGamemode() {
 	  delete _Gamemode;
 	  _Gamemode = nullptr;
 	  
-	  if (! _PauseStack.empty()) {
-	  	PDObjectManager::Resume();
-//	  	PDPhy::Resume(); // TODO implement function
-	  	video::Resume();
-	  	
-	  	// shutdown the gamemode and delete it
-	  	PauseInfo pi = _PauseStack.top();
-	  	pi.pGamemode->Shutdown();
-	  	delete pi.pGamemode;
-	  	_PauseStack.pop();
-	  }
+	  clearPauseStack();
 	}
 	else if (_IsRestarting) {
 	  _Gamemode->Shutdown();
@@ -135,11 +139,18 @@ void PDGamemodeManager::Init(const PDGameData& srcData) {
 	_Gamemode = nullptr;
 }
 
-#include "sdl_incs.h"
+//#include "sdl_incs.h"
 
+/**************************************************/
+/* Update
+   Updates the active gamemode and modifies the
+   state of the manager according to specific
+   flags.
+*/
+/**************************************************/
 void PDGamemodeManager::Update() {
 	int iTicks = 0;
-	float fElapsed;
+	float fElapsed = s_gameData->sec;
 	
 	InitGamemode();
 	
@@ -147,8 +158,8 @@ void PDGamemodeManager::Update() {
 	  _Timer.start();
 	  
 	  // update the input, 
-//	  PDInput::Reset(); // TODO implement class and method
-	  // TODO process messages
+	  PDInput::Reset(fElapsed);
+	  PDInput::Update(fElapsed);
 	  PDObjectManager::Update(fElapsed);
 //	  PDPhy::Update(); // TODO implement PDPhy::Update
 	  _Gamemode->Update(fElapsed);
@@ -170,6 +181,8 @@ void PDGamemodeManager::Update() {
 void PDGamemodeManager::Shutdown() {
 	::delete s_gameData;
 	s_gameData = nullptr;
+	_Factory.ClearBuilders();
+	clearPauseStack();
 }
 
 // public

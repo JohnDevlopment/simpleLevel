@@ -5,6 +5,8 @@
 #include "game.hpp"
 #include "log.hpp"
 #include "objecthelper.h"
+#include "textures.h"
+#include "camera.h"
 
 PDSplashGamemode::PDSplashGamemode() : m_counter(0), m_maxTime(0)
 {
@@ -15,8 +17,6 @@ PDSplashGamemode::~PDSplashGamemode()
 }
 
 void PDSplashGamemode::Init() {
-	PDGameData& gmd = PDGamemodeManager::GetGameData();
-	
 	PDIniFile ini;
 	std::string sObj = GAMEMODE_DATA_PATH;
 	ini.ReadFile(sObj + "splash.ini");
@@ -24,7 +24,7 @@ void PDSplashGamemode::Init() {
 	// max time for gamemode
 	float fVal;
 	ini.GetValue("maxTime", fVal);
-	m_maxTime = static_cast<int>(fVal * gmd.fps);
+	m_maxTime = static_cast<int>(fVal * PDGamemodeManager::GetGameData().fps);
 	
 	// objects to define
 	LoadObjects(ini);
@@ -32,7 +32,7 @@ void PDSplashGamemode::Init() {
 
 void PDSplashGamemode::Update(float dt) {
 	if (++m_counter == m_maxTime) {
-	  game::Shutdown->DoAction();
+	  PDGamemodeManager::Quit();
 	}
 }
 

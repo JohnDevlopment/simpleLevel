@@ -1,13 +1,16 @@
 // engine headers
+#include "debug.hpp"
 #include "pdmanager.h"
 #include "registerpdobjecttypes.h"
 #include "registerpdcomponenttypes.h"
+#include "registerpdcommandtypes.h"
 #include "pdfactory.h"
 #include "pdcomponentbuilder.h"
 
 // other headers
 #include <unordered_map>
 #include <algorithm>
+#include <stack>
 
 namespace {
 	typedef std::vector<PDObject*> ObjectVec;
@@ -18,8 +21,11 @@ namespace {
 	const int _START_SIZE = 50;
 	
 	static PDFactory<PDComponentType, PDComponentBuilder, PDComponent> _CompFactory;
+	static PDFactory<PDCommandType, PDCommandBuilder, PDCommand> _CmdFactory;
 	static ObjectVec _Objects;
 	static PrototypeMap _Prototypes;
+	static int _NextObject;
+	static std::stack<int> _PauseStack;
 }
 
 /**************************************************/
@@ -32,6 +38,7 @@ void PDObjectManager::Init() {
 	_Objects.reserve(_START_SIZE);
 	RegisterComponents();
 	RegisterObjectTypes();
+	RegisterCommands();
 }
 
 /**************************************************/
@@ -40,6 +47,7 @@ void PDObjectManager::Init() {
 void PDObjectManager::Shutdown() {
 	CHECK_FUNC(1);
 	
+	// delete all the prototypes
 	MapItr beg = _Prototypes.begin();
 	MapItr end = _Prototypes.end();
 	
@@ -48,6 +56,11 @@ void PDObjectManager::Shutdown() {
 	  beg->second = nullptr;
 	  ++beg;
 	}
+	
+	// delete all the prototypes
+	for (auto itr = _Objects.begin(); itr != _Objects.end(); ++itr) {
+	  delete *itr;
+	}
 }
 
 /**************************************************/
@@ -55,7 +68,7 @@ void PDObjectManager::Shutdown() {
 for time-based operations that may take place. */
 /**************************************************/
 void PDObjectManager::Update(float dt) {
-	for (size_t i = 0; i < _Objects.size(); ++i) {
+	for (size_t i = _NextObject ; i < _Objects.size(); ++i) {
 	  // delete the "dead" object
 	  if (_Objects[i]->m_isDead) {
 	  	delete _Objects[i];
@@ -68,6 +81,24 @@ void PDObjectManager::Update(float dt) {
 	  	_Objects[i]->Update(dt);
 	  }
 	}
+}
+
+/**************************************************/
+/* Pauses the updating of objects created up to
+this point. */
+/**************************************************/
+void PDObjectManager::Pause() {
+	_PauseStack.push(_NextObject);
+	_NextObject = _PauseStack.size();
+}
+
+/**************************************************/
+/* Resumes updating of objects from the last
+updated one. */
+/**************************************************/
+void PDObjectManager::Resume() {
+	_NextObject = _PauseStack.top();
+	_PauseStack.pop();
 }
 
 /**************************************************/
@@ -107,6 +138,7 @@ void PDObjectManager::AddObjectType(PDObjectType type, const char* file) {
 	// for each component name, turn it into an actual component
 	std::stringstream ss (sComponents);
 	while (ss >> sName) {
+	  sName.erase( sName.find_first_of("Comp") );
 	  PDComponent* comp = _CompFactory.Build( StringToPDComponentType(sName) );
 	  comp->FromFile(inifile);
 	  newobject->AddComponent(comp);
@@ -136,4 +168,34 @@ PDObject* PDObjectManager::CreateObject(PDObjectType type) {
 	_Objects.push_back(retval);
 	
 return retval;
+}
+
+/**************************************************/
+/* AddCommand
+   Adds a builder for commands to a factory,
+   associating it with a numeric ID.
+   
+   @param type		An enumerated type for the
+   			command
+   @param builder	A pointer to base class
+   			PDCommandBuilder, which
+   			knows how to build a
+   			command
+*/
+/**************************************************/
+void PDObjectManager::AddCommand(PDCommandType type, PDCommandBuilder* builder) {
+	_CmdFactory.AddBuilder(type, builder);
+}
+
+/**************************************************/
+/* NewCommand
+   Builds a command using the type argument.
+   
+   @param type	Enumerated type of the command
+   @returns	A pointer to PDCommand, an object
+   		that represents a command
+*/
+/**************************************************/
+PDCommand* PDObjectManager::NewCommand(PDCommandType type) {
+	return _CmdFactory.Build(type);
 }

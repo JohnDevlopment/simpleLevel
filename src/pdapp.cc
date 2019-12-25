@@ -7,15 +7,32 @@
 #include <bitset>
 #include "pdgamemodetypes.h"
 #include "pdmanager.h"
+#include "input.hpp"
+
+/* Namespace for variables that should be accessible to every source file in the program
+   at the global scale.
+   
+   Flags: bit 10 (0x0000 or 0000 0100 0000 0000) = undefined
+          bit  9 (0x0200 or 0000 0010 0000 0000) = texture packs have been loaded if this is set
+          bit  8 (0x0100 or 0000 0001 0000 0000) = cleanup certain blocks of memory at the gm_level cleanup routine
+          bit  7 (0x0080 or 0000 0000 1000 0000) = fade to black
+          bit  6 (0x0040 or 0000 0000 0100 0000) = fade from black
+          bit  5 (0x0020 or 0000 0000 0010 0000) = music system initialized
+          bit  4 (0x0010 or 0000 0000 0001 0000) = level scroll enabled
+          bit  3 (0x0008 or 0000 0000 0000 1000) = trigger system activated
+          bit  2 (0x0004 or 0000 0000 0000 0100) = quit game (gm_level)
+          bit  1 (0x0002 or 0000 0000 0000 0010) = disable input when set
+          bit  0 (0x0001 or 0000 0000 0000 0001) = indicates DLOpen has been called and the resource file is loaded
+*/
 
 enum {
-	SDL_INITTED = 1,
-	WINDOW_CREATED = 2,
-	RENDERER_CREATED = 4,
-	SDL_IMAGE_STARTED = 8,
-	SCRIPT_SYSTEM_INITTED = 16,
-	SOUND_SYSTEM_INITTED = 32,
-	RESOURCES_LOADED = 64
+	SDL_INITTED = 0x01,
+	WINDOW_CREATED = 0x02,
+	RENDERER_CREATED = 0x04,
+	SDL_IMAGE_STARTED = 0x08,
+	SCRIPT_SYSTEM_INITTED = 0x10,
+	SOUND_SYSTEM_INITTED = 0x20,
+	RESOURCES_LOADED = 0x40
 };
 
 #define _print_error(f) std::cerr << #f << " : " << SDL_GetError() << '\n';
@@ -41,8 +58,6 @@ void PDApp::DestroyWindow() {
 void PDApp::Init(PDInitData& initData) {
 	using std::cerr;
 	initData.success = false;
-	
-	game::Shutdown = new PDExitCmd;
 	
 	// start SDL
 	if ( SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_TIMER) < 0 ) {
@@ -110,18 +125,23 @@ void PDApp::Init(PDInitData& initData) {
 	PDGameData gameData = {
 		static_cast<unsigned int>(s_initData->fps),
 		static_cast<unsigned int>(1000 / s_initData->fps),
-		0
+		s_initData->fps / 1000.0f,
+		static_cast<unsigned int>(s_initData->width),
+		static_cast<unsigned int>(s_initData->height)
 	};
+	Log_Print(gameData.sec); // TODO remove
 	PDGamemodeManager::Init(gameData);
 	PDGamemodeManager::SetFirstGamemode(PDGM_Splash);
-	PDObjectManager::Init();
+	PDObjectManager::Init(); // TODO should I move this to be inside PDGamemodeManager::Init()?
+	
+	// initialize the input system
+	PDInput::Init(); // TODO move inside PDGamemodeManager::Init()
 	
 	initData.success = true;
 }
 
 void PDApp::Shutdown() {
-	delete game::Shutdown;
-	
+	PDInput::Shutdown();
 	PDObjectManager::Shutdown();
 	PDGamemodeManager::Shutdown();
 	s_manager.Clear();

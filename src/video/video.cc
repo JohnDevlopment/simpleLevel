@@ -3,6 +3,8 @@
 #include <memory>
 #include <stack>
 #include "GfxComponent.h"
+#include "FadeComponent.h"
+#include "PDTexture.h"
 
 /**************************************/
 /*
@@ -31,6 +33,7 @@ static std::stack<PDGfxState> _private_pause_stack;
 typedef std::vector<PDGfxComponent*> Components;
 Components _private_world_components;
 Components _private_hud_components;
+PDFadeComponent* _private_fade_component = nullptr;
 
 namespace video {
 
@@ -107,6 +110,10 @@ void Update() {
 	  _private_hud_components[i]->Draw();
 	}
 	
+	// draw fader component
+	if (_private_fade_component)
+	  _private_fade_component->Draw();
+	
 	// end the drawing scene
 	SDL_RenderPresent(_private_renderer);
 }
@@ -140,12 +147,26 @@ void RegisterHUDComponent(PDGfxComponent* pComp) {
 	_private_hud_components.push_back(pComp);
 }
 
-/**************************************/
-/*
-Unregisters the given component from
-both the world and HUD lists.
+/**************************************************/
+/* RegisterHUDFader
+   Registers a fade component to the HUD drawspace.
+   
+   @param pComp	A fade component to register
 */
-/**************************************/
+/**************************************************/
+void RegisterHUDFader(PDFadeComponent* pComp) {
+	Log_Assert(! _private_fade_component, "A fader component is already registered");
+	_private_fade_component = pComp;
+}
+
+/**************************************************/
+/* UnregisterComponent
+   Removes the given component from the HUD and
+   world lists.
+   
+   @param pComp	The component to remove
+*/
+/**************************************************/
 void UnregisterComponent(PDGfxComponent* pComp) {
 	size_t szStop = _private_world_components.size();
 	
@@ -164,6 +185,19 @@ void UnregisterComponent(PDGfxComponent* pComp) {
 	  	_private_hud_components.pop_back();
 	  }
 	}
+}
+
+/**************************************************/
+/* UnregisterComponent
+   Removes the given fader component from
+   the queue.
+   
+   @param pComp	The component to remove
+*/
+/**************************************************/
+void UnregisterComponent(PDFadeComponent* pComp) {
+	if (pComp == _private_fade_component)
+	  _private_fade_component = nullptr;
 }
 
 /**************************************/
@@ -188,6 +222,8 @@ void ClearComponents() {
 //	  delete _private_hud_components[i];
 //	}
 	_private_hud_components.clear();
+	
+	_private_fade_component = nullptr;
 }
 
 /**************************************************/
@@ -224,8 +260,25 @@ void Resume() {
 	SetBgColor(newBgColor);
 }
 
-void Draw(PDTexture* texture) {
+/**************************************************/
+/* Draw
+   Draws the texture at the given position on
+   the screen relative to the active camera.
+   
+   @param texture	The texture to draw
+   @param pos		A point where to draw the
+   			texture
+*/
+/**************************************************/
+void Draw(PDTexture* texture, const Point<int>& pos) {
+	if (! texture || texture->GetRefCount() <= 0) return;
 	
+	Point<int> size = texture->GetBlitSize();
+	const SDL_Rect* const pCam = GetCamera();
+	SDL_Rect blit = {pos.x() - pCam->x, pos.y() - pCam->y, size.x(), size.y()};
+	SDL_Rect clip = texture->GetClipRect();
+	
+	SDL_RenderCopy(_private_renderer, texture->GetTexture(), &clip, &blit);
 }
 
 } // end namespace video

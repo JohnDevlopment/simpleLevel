@@ -53,7 +53,6 @@
 #define FLAC        0x43614C66      /* "fLaC" */
 
 using std::cerr;
-using game::Flags;
 
 // WAVStream functions to make visible
 void WAVStream_FreeSong(WAVStream* wav);
@@ -103,6 +102,7 @@ static int MsPerStep;
 static _Sound_Channel* Channel = nullptr;
 static std::unique_ptr<SFXData*[]> Sfxs(new SFXData*[NUMBER_OF_GLOBAL_SFX]);
 static void* Handle = nullptr;
+static bool SystemInit = false;
 
 MusData* CurrentMusic = nullptr;
 
@@ -122,7 +122,7 @@ bool Sound_Init(int freq, uint16_t format, int ch, int chunksize) {
 	SDL_AudioSpec desiredspecs;
 	
 	// if device already opened, return
-	if (Flags.mask(SOUND_API_INIT))
+	if (SystemInit)
 	  return true;
 	
 	// allocate pointer
@@ -142,11 +142,11 @@ bool Sound_Init(int freq, uint16_t format, int ch, int chunksize) {
 	desiredspecs.userdata = nullptr;
 	
 	// open audio device
-	if (openAudioDevice(desiredspecs) < 0)
+	if ( openAudioDevice(desiredspecs) < 0 )
 	  return false;
 	
 	// init music players
-	if (MusicFmt_Init(*CurrentAudioSpecs) < 0)
+	if ( MusicFmt_Init(*CurrentAudioSpecs) < 0 )
 	  return false;
 	
 	CurrentMusic = nullptr;
@@ -178,7 +178,7 @@ bool Sound_Init(int freq, uint16_t format, int ch, int chunksize) {
 	Log_Cout("      - Loaded %d global sound effects\n", NUMBER_OF_GLOBAL_SFX);
 	
 	// set global flag
-	Flags.set(SOUND_API_INIT);
+	SystemInit = true;
 	
 	// pause audio
 	SDL_PauseAudioDevice(AudioID, 0);
@@ -187,7 +187,7 @@ return true;
 }
 
 void Sound_Quit() {
-	if ( Flags.mask(SOUND_API_INIT) ) {
+	if (SystemInit) {
 	  closeGlobalSFX();
 	  DLClose(Handle);
 	  Handle = nullptr;
@@ -201,8 +201,12 @@ void Sound_Quit() {
 	  Channel = nullptr;
 	  MusicFmt_Quit();
 	  closeAudioDevice(); // FIXME callback still runs even after this, causing a SEGFAULT
-	  Flags.unset(SOUND_API_INIT);
+	  SystemInit = false;
 	}
+}
+
+bool Sound_Active() {
+	return SystemInit;
 }
 
 ////////// music functions ////////////
