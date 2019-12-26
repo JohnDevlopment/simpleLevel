@@ -71,7 +71,8 @@ void PDFactory<EnumType, BuilderType, ReturnType>::RemoveBuilder(EnumType type)
 }
 
 /*********************************************************************************/
-/* Return a builder associated with the given type. */
+/* Returns an a pointer to base class ReturnType using the base class BuilderType
+as a method of building the former. Uses EnumType to decide which builder to use. */
 /*********************************************************************************/
 template<typename EnumType, class BuilderType, class ReturnType>
 ReturnType* PDFactory<EnumType, BuilderType, ReturnType>::Build(EnumType type)

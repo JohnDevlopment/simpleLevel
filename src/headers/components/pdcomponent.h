@@ -6,7 +6,6 @@
 
 /* Component */
 class PDObject;
-class PDIniFile;
 
 class PDComponent {
 	int m_id;

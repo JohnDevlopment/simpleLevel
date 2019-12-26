@@ -12,20 +12,16 @@ enumerations of the form PDOT_* */
 #include <string>
 
 enum PDObjectType {
-	PDOT_Bullet,
-	PDOT_Enemy,
-	PDOT_Exit,
-	PDOT_Player,
-	PDOT_Trigger,
+	PDOT_Blackfader,
+	PDOT_Menubutton,
+	PDOT_Splash,
 	PDOT_Invalid
 };
 
 inline PDObjectType StringToPDObjectType(const std::string& str) {
-	if (str == "Bullet") return PDOT_Bullet;
-	if (str == "Enemy") return PDOT_Enemy;
-	if (str == "Exit") return PDOT_Exit;
-	if (str == "Player") return PDOT_Player;
-	if (str == "Trigger") return PDOT_Trigger;
+if (str == "Blackfader") return PDOT_Blackfader;
+if (str == "Menubutton") return PDOT_Menubutton;
+if (str == "Splash") return PDOT_Splash;
 
 return PDOT_Invalid;
 }

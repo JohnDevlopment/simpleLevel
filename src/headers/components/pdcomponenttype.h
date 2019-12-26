@@ -12,12 +12,14 @@ enumerations of the form PDC_* */
 #include <string>
 
 enum PDComponentType {
+	PDC_Fade,
 	PDC_Gfx,
 	PDC_Invalid
 };
 
 inline PDComponentType StringToPDComponentType(const std::string& str) {
-	if (str == "Gfx") return PDC_Gfx;
+if (str == "Fade") return PDC_Fade;
+if (str == "Gfx") return PDC_Gfx;
 
 return PDC_Invalid;
 }

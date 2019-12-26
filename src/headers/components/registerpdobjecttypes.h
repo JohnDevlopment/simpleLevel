@@ -11,11 +11,9 @@ and registers different types with the object manager */
 #include "pdmanager.h" // pdmanager.h => pdobject.h => pdobjecttype.h
 
 inline void RegisterObjectTypes() {
-	PDObjectManager::AddObjectType(PDOT_Bullet, "data/objecttypes/bullet.ini");
-	PDObjectManager::AddObjectType(PDOT_Enemy, "data/objecttypes/enemy.ini");
-	PDObjectManager::AddObjectType(PDOT_Exit, "data/objecttypes/exit.ini");
-	PDObjectManager::AddObjectType(PDOT_Player, "data/objecttypes/player.ini");
-	PDObjectManager::AddObjectType(PDOT_Trigger, "data/objecttypes/trigger.ini");
+	PDObjectManager::AddObjectType(PDOT_Blackfader, "data/objecttypes/blackfader.ini");
+	PDObjectManager::AddObjectType(PDOT_Menubutton, "data/objecttypes/menubutton.ini");
+	PDObjectManager::AddObjectType(PDOT_Splash, "data/objecttypes/splash.ini");
 } 
 
 #endif /* REGISTERPDOBJECTTYPES_H_INCLUDED */

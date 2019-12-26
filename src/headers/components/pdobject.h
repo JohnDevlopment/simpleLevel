@@ -6,6 +6,7 @@
 #include "sdl_incs.h"
 #include "pdcomponent.h" // pdcomponent.h => pdcomponenttype.h
 #include "pdobjecttype.h"
+#include "pdinifile.h"
 
 // other headers
 #include <vector>
@@ -35,19 +36,25 @@ class PDObject {
 	
 	public:
 	
-	Point<float> m_pos;
+	friend class PDApp;
+	friend class PDGamemodeManager;
+	
+	Point<int> m_pos;
 	PVector<float> m_vel;
 	bool m_isDead;
 	
 	// constructors
-	PDObject(PDObjectType type);
-	PDObject(const PDObject& src) = delete;
-	PDObject(PDObject&& src);
+	PDObject(PDObjectType);
+	PDObject(const PDObject&) = delete;
+	PDObject(PDObject&&);
 	
 	~PDObject();
 	
 	// update the object
 	void Update(float dt);
+	
+	// read object properties from file
+	void FromFile(PDIniFile& inifile);
 	
 	// add/remove components
 	void AddComponent(PDComponent* comp);
