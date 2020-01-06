@@ -3,6 +3,7 @@
 #include "res.hpp"
 #include "stdinc.h"
 #include "endian.hpp"
+#include "log.hpp"
 
 #include <vector>
 
@@ -52,23 +53,22 @@ static bool ParseFMT(WAVStream* wav, uint32_t len) {
 	std::unique_ptr<uint8_t[]> data(new uint8_t[len]);
 	
 	if (len < sizeof(WaveFMT)) {
-	  Sound_SetError(ParseFMT, "size of FMT block too small");
+	  Log_SetError("size of FMT block too small");
 	  return false;
 	}
 	
 	// read FMT chunk into memory and interpret it as WaveFMT
 	if ( ! SDL_RWread(src, data.get(), len, 1) ) {
-	  Sound_SetError(ParseFMT, "failed to read bytes") \
-	  << "Error: " << SDL_GetError() << '\n';
+	  Log_SetError("failed to read bytes from FMT block");
 	  return false;
 	}
-	format = (WaveFMT*) data.get();
+	format = reinterpret_cast<WaveFMT*>( data.get() );
 	
 	// wrong encoding
 	uint16_t uiEncoding = SwapLE16(format->encoding);
 	
 	if (uiEncoding != PCM_CODE) {
-	  Sound_SetError(ParseFMT, "unknown WAVE format");
+	  Log_SetError("unknown WAVE format");
 	  return false;
 	}
 	
@@ -86,7 +86,7 @@ static bool ParseFMT(WAVStream* wav, uint32_t len) {
 	  	break;
 	  
 	  default:
-	  	Sound_SetError(ParseFMT, "unknown PCM format");
+	  	Log_SetError("unknown PCM format");
 	  	return false;
 	  	break;
 	}
@@ -104,21 +104,41 @@ static bool ParseDATA(WAVStream* wav, uint32_t len) {
 return true;
 }
 
+static bool AddLoopPoint(WAVStream* wav, uint32_t count, uint32_t start, uint32_t stop) {
+	WAVLoopPoint* loop;
+	WAVLoopPoint* loops = realloc_mem(wav->loops, wav->numloops, wav->numloops + 1);
+	if (! loops) {
+	  Log_SetError("ran out of memory");
+	  return false;
+	}
+	
+	loop = &loops[wav->numloops];
+	loop->start = start;
+	loop->stop = stop;
+	loop->initial_play_count = count;
+	loop->current_play_count = count;
+	
+	wav->loops = loops;
+	++wav->numloops;
+	return true;
+}
+
 static bool ParseSMPL(WAVStream* wav, uint32_t len) {
 	std::unique_ptr<uint8_t[]> data(new uint8_t[len]);
 	SamplerChunk* smpl;
 	
 	if ( ! SDL_RWread(wav->src, data.get(), len, 1) ) {
-	  Sound_SetError(ParseSMPL, "not enough bytes from file");
+	  Log_SetError("not enough bytes from SMPL block");
 	  return false;
 	}
-	smpl = (SamplerChunk*) data.get();
+	smpl = reinterpret_cast<SamplerChunk*>( data.get() );
 	
 	for (uint32_t i = 0; i < SDL_SwapLE32(smpl->sampleloops); ++i) {
 	  const uint32_t _loop_forward = 0;
 	  uint32_t _type = SDL_SwapLE32(smpl->loops[i].type);
 	  if (_type == _loop_forward) {
-	  	// TODO add a loop point
+	  	AddLoopPoint(wav, SDL_SwapLE32(smpl->loops[i].play_count),
+	  	             SDL_SwapLE32(smpl->loops[i].start), SDL_SwapLE32(smpl->loops[i].end) );
 	  }
 	}
 	
@@ -156,9 +176,7 @@ static bool LoadWAVStream(WAVStream* wav) {
 	  	  break;
 	  	
 	  	case SMPL:
-	  	  // if ( ! ParseSMPL(wav, uiChLen) ) return false;
-	  	  Sound_SetError(LoadWAVStream, "SMPL not currently supported");
-	  	  return false; // FIXME arbitrarily returns false
+	  	  if ( ! ParseSMPL(wav, uiChLen) ) return false; // TODO make sure this works!
 	  	  break;
 	  	
 	  	default:
@@ -167,13 +185,14 @@ static bool LoadWAVStream(WAVStream* wav) {
 	  }
 	}
 	
+	// WAV files require at least the FMT and DATA chunks
 	if (! found_FMT) {
-	  Sound_SetError(LoadWAVStream, "FMT block not found; bad WAV file");
+	  Log_SetError("FMT block not found; bad WAV file");
 	  return false;
 	}
 	
 	if (! found_DATA) {
-	  Sound_SetError(LoadWAVStream, "DATA block not found; bad WAV file");
+	  Log_SetError("DATA block not found; bad WAV file");
 	  return false;
 	}
 	
@@ -184,14 +203,13 @@ static int PlaySome(uint8_t* stream, int len) {
 	int64_t iPos, iStop; // , iLoopStart, iLoopStop
 //	WAVLoopPoint* loop = nullptr;
 	int iConsumed;
+//	const int iBytesPerSample = SDL_AUDIO_BITSIZE(Music->spec.format) / 8;
 	
 	iPos = SDL_RWtell(Music->src);
 	iStop = Music->stop;
 	
 //	// loop points
 //	for (int x = 0; x < Music->numloops; ++x) {
-//	  const int iBytesPerSample = SDL_AUDIO_BITSIZE(Music->spec.format) / 8;
-//	  
 //	  loop = &Music->loops[x];
 //	  iLoopStart = Music->start + loop->start * iBytesPerSample;
 //	  iLoopStop = Music->start + (loop->stop + 1) * iBytesPerSample;
@@ -278,10 +296,14 @@ int WAVStream_SetPosition(double position) {
 	const short int iSampleSize = SDL_AUDIO_BITSIZE(Music->spec.format) / 8 * Music->spec.channels;
 	int64_t iOffset = static_cast<int64_t>(position * (double) Music->spec.freq * (double) iSampleSize);
 	
-	auto retval = SDL_RWseek(Music->src, Music->start, RW_SEEK_SET);
-	if (retval >= 0) {
+	int64_t retval = SDL_RWseek(Music->src, Music->start, RW_SEEK_SET);
+	
+	if (retval < 0)
+	  Log_SetError("seeking is not possible");
+	else {
 	  retval = SDL_RWseek(Music->src, iOffset, RW_SEEK_CUR);
-	  if (retval < 0) Sound_SetError(WAVStream_SetPosition, SDL_GetError());
+	  if (retval < 0)
+	  	Log_SetError("failed to seek in wav stream: %s", SDL_GetError());
 	}
 	
 return retval;
@@ -342,12 +364,12 @@ WAVStream* WAVStream_LoadSong_RW(SDL_RWops* src, int freesrc) {
 	  loaded = LoadWAVStream(wave);
 	}
 	else {
-	  Sound_SetError(WAVStream_LoadSong_RW, "do not recognize wave format");
+	  Log_SetError("do not recognize wave format");
 	}
 	
 	if (! loaded) {
 	  WAVStream_FreeSong(wave);
-	  Sound_SetError(WAVStream_LoadSong_RW, "failed to load WAVE file");
+	  Log_SetError("failed to load WAVE file");
 	  return nullptr;
 	}
 	

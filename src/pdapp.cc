@@ -55,6 +55,10 @@ void PDApp::DestroyWindow() {
 	s_flags.unset(RENDERER_CREATED|WINDOW_CREATED);
 }
 
+PDInitData& PDApp::GetInitData() {
+	return *s_initData;
+}
+
 void PDApp::Init(PDInitData& initData) {
 	using std::cerr;
 	initData.success = false;
@@ -129,13 +133,8 @@ void PDApp::Init(PDInitData& initData) {
 		static_cast<unsigned int>(s_initData->width),
 		static_cast<unsigned int>(s_initData->height)
 	};
-	Log_Print(gameData.sec); // TODO remove
 	PDGamemodeManager::Init(gameData);
 	PDGamemodeManager::SetFirstGamemode(PDGM_Splash);
-	PDObjectManager::Init(); // TODO should I move this to be inside PDGamemodeManager::Init()?
-	
-	// initialize the input system
-	PDInput::Init(); // TODO move inside PDGamemodeManager::Init()
 	
 	initData.success = true;
 }

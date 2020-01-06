@@ -1,12 +1,23 @@
 #include "pdinifile.h"
 #include "log.hpp"
+#include "memory.hpp"
+#include "string.h"
+#include "ini_error.h"
 
-PDIniFile::PDIniFile() : m_sections(), m_cursection(nullptr) {
+PDIniFile::PDIniFile() : m_sections(), m_cursection(nullptr), m_file(nullptr) {
 	m_sections.insert(std::make_pair("", KeyValMap()));
 	SetToSection("");
 }
 
-void PDIniFile::ReadFile(const std::string& file) {
+int PDIniFile::ReadFile(const std::string& file) {
+	char* sNewFile = realloc_mem(m_file, String_strlen(m_file), file.length());
+	if (! sNewFile) {
+	  throw std::bad_alloc();
+	}
+	String_strcpy(sNewFile, file.c_str());
+	m_file = sNewFile;
+	sNewFile = nullptr;
+	
 	// clear old data
 	m_cursection = nullptr;
 	m_sections.clear();
@@ -14,6 +25,11 @@ void PDIniFile::ReadFile(const std::string& file) {
 	// open file
 	std::ifstream ifs(file);
 	Log_Assert(ifs.is_open(), "Failed to open INI file");
+	
+	if ( ! ifs.is_open() ) {
+	  Log_SetError("unable to open %s, it does not exist or could not be read", file.c_str());
+	  return -1;
+	}
 	
 	// collect data
 	StringMapPair curSection;
@@ -47,15 +63,23 @@ void PDIniFile::ReadFile(const std::string& file) {
 	m_sections.insert(curSection);
 	ifs.close();
 	SetToSection("");
+	
+	return 0;
 }
 
-void PDIniFile::SetToSection(const std::string& sec) {
+int PDIniFile::SetToSection(const std::string& sec) {
 	SectionMapItr found = m_sections.find(sec);
-	Log_Assert(found != m_sections.end(), "Section could not be found");
+	
+	if (found == m_sections.end()) {
+	  Log_SetError("Could not find section '%s'", sec);
+	  return -1;
+	}
+	
 	m_cursection = &(found->second);
+	return 0;
 }
 
-////////////////////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////private functions/////////////////////////////////////////
 
 void PDIniFile::ParseSection(StringMapPair& curSection, std::string& line, size_t& beg, size_t& end)
 {
@@ -78,6 +102,15 @@ void PDIniFile::SeparateValueLine(StringPair& pair, const std::string& line, siz
 	
 	szKeyEnd = szValBeg = line.find_first_of('=', beg);
 	Log_Assert(szKeyEnd != std::string::npos, "No equal sign found in key value");
+	
+#ifndef NDEBUG
+	if (szKeyEnd == std::string::npos) {
+	  std::string sError = "no equal sign found in '" + line;
+	  sError += '\'';
+	  ini_error e(sError);
+	  throw e;
+	}
+#endif
 	
 	// remove spaces between key and =
 	RemoveTrailingSpaces(line, beg, --szKeyEnd);
@@ -107,6 +140,14 @@ void PDIniFile::GetSectionName(std::string& line, size_t& beg, size_t& end)
 	RemoveLeadingSpaces(line, beg, end);
 	end = line.find_first_of(']');
 	Log_Assert(beg != end && static_cast<size_t>(end) != std::string::npos, "Invalid section name");
+	
+#ifndef DEBUG
+	if (beg == end || end == std::string::npos) {
+	  std::string sError = "invalid section name, " + line.substr(beg);
+	  ini_error e( sError );
+	  throw e;
+	}
+#endif
 	
 	// remove trailing spaces from string
 	RemoveTrailingSpaces(line, beg, --end);

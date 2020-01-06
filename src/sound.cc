@@ -166,7 +166,7 @@ bool Sound_Init(int freq, uint16_t format, int ch, int chunksize) {
 	// open library file
 	Handle = DLOpen("audio/sound_effects/sfx.so");
 	if (Handle == nullptr) {
-	  Sound_SetError(Sound_Init, "failed to open sfx.so");
+	  Log_SetError("failed to open sfx.so");
 	  return false;
 	}
 	Log_Cout("    Opened audio/sound_effects/sfx.so\n");
@@ -200,7 +200,7 @@ void Sound_Quit() {
 	  delete[] Channel;
 	  Channel = nullptr;
 	  MusicFmt_Quit();
-	  closeAudioDevice(); // FIXME callback still runs even after this, causing a SEGFAULT
+	  closeAudioDevice();
 	  SystemInit = false;
 	}
 }
@@ -223,7 +223,7 @@ static MUS_Type detectMusicType(SDL_RWops* src) {
 	// read magic bytes
 	iPos = SDL_RWtell(src);
 	if ( SDL_RWread(src, uiMagic, 1, 4) != 4 || SDL_RWread(src, uiMoreMagic, 1, 8) != 8 ) {
-	  Sound_SetError(detectMusicType, "failed to read RWops");
+	  Log_SetError("failed to read data: %s", SDL_GetError());
 	  return type;
 	}
 	uiMagic[4] = '\0';
@@ -251,7 +251,7 @@ MusData* Sound_LoadMUS(const char* src) {
 	// open handle to file
 	rw = SDL_RWFromFile(src, "rb");
 	if (! rw) {
-	  Sound_SetError(Sound_LoadMUS, SDL_GetError());
+	  Log_SetError("failed to load music: %s", SDL_GetError());
 	  return nullptr;
 	}
 	
@@ -279,21 +279,22 @@ return Sound_LoadMUSType_RW(rw, type, 1);
 MusData* Sound_LoadMUSType_RW(SDL_RWops* rw, MUS_Type type, int freesrc) {
 	MusData* mus;
 	
+	// NULL file handle
 	if (rw == nullptr) {
-	  Sound_BadParameter(Sound_LoadMUSType_RW, rw);
+	  Log_BadParam(rw);
 	  return nullptr;
 	}
 	
-	// for now, reject the type argument being MUS_TYPE_NONE; TODO change this
+	// FIXME for now, reject the type argument being MUS_TYPE_NONE
 	if (type == MUS_TYPE_NONE) {
-	  Sound_BadParameterAndMsg(Sound_LoadMUSType_RW, type, "MUS_TYPE_NONE is not accepted right now");
+	  Log_BadParam(type);
 	  return nullptr;
 	}
 	
 	// allocate MusData and initialize it
 	mus = new (std::nothrow) MusData;
 	if (! mus) {
-	  Sound_SetError(Sound_LoadMUSType_RW, "no memory to allocate MusData");
+	  Log_SetError("ran out of memory");
 	  return nullptr;
 	}
 	MusData_Clear(mus, MAX_VOLUME);
@@ -312,7 +313,7 @@ MusData* Sound_LoadMUSType_RW(SDL_RWops* rw, MUS_Type type, int freesrc) {
 	  	break;
 	  
 	  default:
-	  	Sound_SetError(Sound_LoadMUSType_RW, "unrecognized format type");
+	  	Log_SetError("unrecognized format type");
 	  	mus->error++;
 	  	break;
 	}
@@ -333,7 +334,7 @@ MusData* Sound_LoadMUSType(const char* src, MUS_Type type) {
 	SDL_RWops* rw = SDL_RWFromFile(src, "rb");
 	
 	if (rw == nullptr) {
-	  Sound_SetError(Sound_LoadMUSType, SDL_GetError());
+	  Log_SetError("failed to open %s : %s", src, SDL_GetError());
 	  return nullptr;
 	}
 	
@@ -343,12 +344,12 @@ return Sound_LoadMUSType_RW(rw, type, 1);
 int Sound_FadeInMusicPos(MusData* mus, int loops, int ms, double position) {
 	// invalid parameters or audio device not set
 	if (! MsPerStep) {
-	  Sound_SetError(Sound_FadeInMusicPos, "audio device has not been activated");
+	  Log_SetError("audio device has not been activated");
 	  return -1;
 	}
 	
 	if (mus == nullptr) {
-	  Sound_BadParameter(Sound_FadeInMusicPos, mus);
+	  Log_BadParam("mus");
 	  return -1;
 	}
 	
@@ -454,7 +455,7 @@ int Sound_FadeOutMusic(int ms) {
 	int retval = 0;
 	
 	if (MsPerStep == 0) {
-	  Sound_SetError(Sound_FadeOutMusic, "audio device has not been opened");
+	  Log_SetError("the audio device is not opened");
 	  return 0;
 	}
 	
@@ -529,7 +530,7 @@ void Sound_FreeMUS(MusData* mus) {
 	  	break;
 	  
 	  default:
-	  	Sound_SetError(Sound_FreeMUS, "invalid format");
+	  	Log_SetError("invalid format");
 	  	break;
 	}
 	
@@ -543,7 +544,7 @@ SFXData* Sound_LoadWAV(const char* file) {
 	SDL_RWops* rw = nullptr;
 	
 	if (file == nullptr) {
-	  ERROR(Sound_LoadWAV, file);
+	  Log_BadParam("file")
 	  return nullptr;
 	}
 	
@@ -551,8 +552,7 @@ SFXData* Sound_LoadWAV(const char* file) {
 	rw = SDL_RWFromFile(file, "rb");
 	
 	if (rw == nullptr) {
-	  Sound_SetError(Sound_LoadWAV, SDL_GetError());
-	  PRINT_LINE(cerr);
+	  Log_SetError("failed to open %s : %s", file, SDL_GetError());
 	  return nullptr;
 	}
 	
@@ -568,8 +568,7 @@ SFXData* Sound_LoadWAV_RW(SDL_RWops* rw, int freesrc) {
 	
 	// invalid parameters or not opened device
 	if (! AudioOpened) {
-	  Sound_SetError(Sound_LoadWAV_RW, "audio device is not open");
-	  PRINT_LINE(cerr);
+	  Log_SetError("audio device is not open");
 	  if (freesrc) {
 	  	SDL_RWclose(rw);
 	  }
@@ -595,18 +594,18 @@ SFXData* Sound_LoadWAV_RW(SDL_RWops* rw, int freesrc) {
 	  	break;
 	  
 	  case OGGS:
-	  	SDL_SetError("OGG not supported yet");
+	  	Log_SetError("OGG not supported yet");
 	  	break;
 	  
 	  default:
-	  	Sound_SetError(Sound_LoadWAV_RW, "unsupported format");
+	  	Log_SetError("unsupported format");
 	  	loaded = nullptr;
 	  	break;
 	}
 	
 	// if it's failed to load
 	if (loaded == nullptr) {
-	  Sound_SetError(Sound_LoadWAV_RW, SDL_GetError());
+	  Log_SetError("failed to load WAV audio: %s", SDL_GetError());
 	  delete sfx;
 	  return nullptr;
 	}
@@ -624,7 +623,7 @@ SFXData* Sound_LoadWAV_RW(SDL_RWops* rw, int freesrc) {
 	  	CurrentAudioSpecs->format, CurrentAudioSpecs->channels, CurrentAudioSpecs->freq ) < 0 ) {
 
 	  	// set error and free memory
-	  	Sound_SetError(Sound_LoadWAV_RW, SDL_GetError());
+	  	Log_SetError("%s", SDL_GetError());
 	  	SDL_free(sfx->abuf);
 	  	delete sfx;
 	  	return nullptr;
@@ -634,7 +633,7 @@ SFXData* Sound_LoadWAV_RW(SDL_RWops* rw, int freesrc) {
 	  cvt.len = sfx->alen & ~(iSampleSize - 1);
 	  cvt.buf = (uint8_t*) SDL_calloc(1, cvt.len * cvt.len_mult);
 	  if (cvt.buf == nullptr) {
-	  	Sound_SetError(Sound_LoadWAV_RW, "ran out of memory");
+	  	Log_SetError("ran out of memory");
 	  	SDL_free(sfx->abuf);
 	  	delete sfx;
 	  	return nullptr;
@@ -645,7 +644,7 @@ SFXData* Sound_LoadWAV_RW(SDL_RWops* rw, int freesrc) {
 	  
 	  // convert the audio buffer
 	  if ( SDL_ConvertAudio(&cvt) < 0 ) {
-	  	Sound_SetError(Sound_LoadWAV_RW, SDL_GetError());
+	  	Log_SetError("%s", SDL_GetError());
 	  	SDL_free(cvt.buf);
 	  	delete sfx;
 	  	return nullptr;
@@ -665,12 +664,13 @@ return sfx;
 int Sound_PlayChannelTimed(int ch, SFXData* sfx, int loops, int ms) {
 	// don't play null pointers
 	if (sfx == nullptr) {
-	  ERROR(Sound_PlayChannelTimed, sfx);
+	  Log_BadParam("sfx");
 	  return -1;
 	}
 	
+	// check if the SFX is valid
 	if ( ! checkSFXInternal(sfx) ) {
-	  Sound_SetError(Sound_PlayChannelTimed, "SFX had a bad frame");
+	  Log_SetError("SFX had a bad frame");
 	  return -1;
 	}
 	
@@ -685,7 +685,7 @@ int Sound_PlayChannelTimed(int ch, SFXData* sfx, int loops, int ms) {
 	  	
 	  	// channels all unavailable
 	  	if (i == _num_channels) {
-	  	  Sound_SetError(Sound_PlayChannelTimed, "no free channel available");
+	  	  Log_SetError("no channel available");
 	  	  ch = -1;
 	  	}
 	  	else {
@@ -713,14 +713,10 @@ int Sound_PlaySFX(int track, int loops) {
 	SFXData* sfx = Sound_GetSFX(track);
 	int code = -1;
 	
-	if (sfx) {
+	if (sfx)
 	  code = Sound_PlayChannelTimed(sfx->channel, sfx, loops, 0);
-	}
-	else {
-	  Sound_SetError(Sound_PlaySFX, "parameter 'track' is out of range");
-	  PRINT_EXPR(cerr, track);
-	  PRINT_LINE(cerr);
-	}
+	else
+	  Log_SetError("track %d does not exist", track);
 	
 return code;
 }
@@ -821,6 +817,7 @@ bool loadGlobalSFX() {
 	  
 	  sfx = Sound_LoadWAV_RW( SDL_RWFromConstMem(vpSym, uiSize), 1 );
 	  if (sfx == nullptr) {
+	  	Log_SetError("loadGlobalSFX(): %s", SDL_GetError());
 	  	return -1;
 	  }
 	  sfx->volume = MAX_VOLUME / 2;
@@ -955,7 +952,7 @@ int openAudioDevice(SDL_AudioSpec& desiredspecs) {
 	// open audio device
 	AudioID = SDL_OpenAudioDevice(nullptr, 0, &desiredspecs, CurrentAudioSpecs, SDL_AUDIO_ALLOW_FORMAT_CHANGE);
 	if ( AudioID < 0 ) {
-	  Sound_SetError(Sound_Init, SDL_GetError());
+	  Log_SetError("error opening device: %s", SDL_GetError());
 	  return -1;
 	}
 	
@@ -1036,7 +1033,7 @@ int internalPlayMusic(MusData* mus, double position) {
 	if (retval == 0) {
 	  if (position > 0.0) {
 	  	if ( internalSetPosition(position) < 0 ) {
-	  	  Sound_SetError(internalPlayMusic, "this format does not set positions");
+	  	  Log_SetError("this format does not seek");
 	  	  retval = -1;
 	  	}
 	  }
@@ -1054,11 +1051,14 @@ int internalSetPosition(double position) {
 	int retval = 0;
 	
 	if (position == 0.0) return 0;
+	else if (position < 0.0) {
+	  Log_SetError("position is less than zero");
+	  return -1;
+	}
 	
 	switch (CurrentMusic->type) {
 	  case MUS_TYPE_WAV:
 	  	retval = WAVStream_SetPosition(position);
-	  	if (retval < 0) Sound_SetError(internalSetPosition, SDL_GetError());
 	  	break;
 	  
 	  case MUS_TYPE_OGG:
@@ -1066,6 +1066,7 @@ int internalSetPosition(double position) {
 	  	break;
 	  
 	  default:
+	  	Log_SetError("unknown format");
 	  	retval = -1;
 	  	break;
 	}

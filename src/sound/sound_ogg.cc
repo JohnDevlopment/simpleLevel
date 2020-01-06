@@ -3,6 +3,7 @@
 #include "stdinc.h"
 #include "endian.hpp"
 #include "memory.hpp"
+#include "log.hpp"
 
 #define cast_to_func(type, args...) (type (*)(args))
 
@@ -152,7 +153,7 @@ OGGMusic* OGGMusic_LoadSong_RW(SDL_RWops* src, int freesrc) {
 	
 	// open the OGG file
 	if ( Vorbis.ov_open_callbacks(src, &mus->vf, nullptr, 0, callbacks) < 0 ) {
-	  Sound_SetError(OGGMusic_LoadSong_RW, "not an OGG file");
+	  Log_SetError("not an OGG file");
 	  delete mus;
 	  return nullptr;
 	}

@@ -130,11 +130,11 @@ void PDFadeComponent::FromFile(PDIniFile& ini) {
 	  // what's the size of the texture?
 	  ini.GetValue("width", sVal);
 	  if (sVal == "SCREEN") size[0] = gmd.width;
-	  else size[0] = math::atoi(sVal);
+	  else size[0] = math::strtoi(sVal);
 	  
 	  ini.GetValue("height", sVal);
 	  if (sVal == "SCREEN") size[1] = gmd.height;
-	  else size[1] = math::atoi(sVal);
+	  else size[1] = math::strtoi(sVal);
 	  
 	  // draw space
 	  ini.GetValue("drawspace", sVal);

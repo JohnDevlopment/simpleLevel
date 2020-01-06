@@ -1,6 +1,9 @@
 #include "log.hpp"
+#include "string.h"
 
 using namespace std;
+
+static string _sError;
 
 static ofstream ofs_out;
 
@@ -157,6 +160,97 @@ void Log_Cerr(string str, ...) {
 	
 	// flush output in case it was buffered
 	ofs_err.flush();
+}
+
+void Log_SetError(const char* fmt, ...) {
+	va_list args;
+	va_start(args, fmt);
+	
+	const size_t szLen = String_strlen(fmt);
+//	std::stringstream ssError;
+	
+//	_sError = "->";
+	_sError.clear();
+	
+	for (size_t x = 0; x < szLen; ++x) {
+	  char c = fmt[x];
+	  
+	  // format specifier
+	  if (c == '%') {
+	  	char cc = fmt[++x];
+	  	switch (cc) {
+	  	  case 'd': {
+	  	  	int iTemp = va_arg(args, int);
+	  	  	//ssError << iTemp;
+	  	  	_sError += to_string(iTemp);
+	  	  	break;
+	  	  }
+	  	  
+	  	  case 'f': {
+	  	  	double fTemp = va_arg(args, double);
+	  	  	//ssError << iTemp;
+	  	  	_sError += to_string(fTemp);
+	  	  	break;
+	  	  }
+	  	  
+	  	  case 'u': {
+	  	  	unsigned int uiTemp = va_arg(args, unsigned int);
+	  	  	//ssError << iTemp;
+	  	  	_sError += to_string(uiTemp);
+	  	  	break;
+	  	  }
+	  	  
+	  	  case 'x': {
+	  	  	unsigned int uiTemp = va_arg(args, unsigned int);
+	  	  	//ssError << "0x" << hex << iTemp << dec;
+	  	  	_sError += to_string(uiTemp); // FIXME should be in hex format...
+	  	  	break;
+	  	  }
+	  	  
+	  	  case 'p': {
+	  	  	void* vpTemp = va_arg(args, void*);
+	  	  	ptrdiff_t iAdr = (ptrdiff_t) vpTemp;
+	  	  	//ssError << "0x" << hex << iAdr << dec;
+	  	  	_sError += to_string(iAdr);
+	  	  	break;
+	  	  }
+	  	  
+	  	  case 's': {
+	  	  	const char* sTemp = va_arg(args, const char*);
+	  	  	//ssError << sTemp;
+	  	  	_sError += sTemp;
+	  	  	break;
+	  	  }
+	  	  
+	  	  default:
+	  	  	//ssError.put(cc);
+	  	  	_sError += cc;
+	  	  	break;
+	  	}
+	  	
+	  	// next index
+	  	continue;
+	  }
+	  
+	  //ssError.put(c);
+	  _sError += c;
+	}
+	
+	va_end(args);
+	
+//	std::string sError = ssError.str();
+	
+	// resize the vector to make it fit
+//	if ( _vct_error.size() < sError.length() )
+//	  _vct_error.resize( sError.length() );
+	
+	// copy translated string to vector
+//	String_strlcpy(ptr, sError.c_str(), _vct_error.size());
+}
+
+const char* Log_GetError() {
+	//return const_cast<const char*>( _vct_error.data() );
+	return _sError.c_str();
 }
 
 //void Log_Print(std::string fmt, std::ostream& out, ...) {

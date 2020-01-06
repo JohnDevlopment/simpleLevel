@@ -5,6 +5,7 @@
 #include "math.hpp"
 #include "input.hpp"
 #include "global_attributes.hpp"
+#include "pdapp.h"
 
 namespace {
 	struct PauseInfo {
@@ -137,6 +138,17 @@ void PDGamemodeManager::Init(const PDGameData& srcData) {
 	
 	_CurrMode = _NextMode = PDGM_Invalid;
 	_Gamemode = nullptr;
+	
+	// initialize other systems that are used in the gamemode manager
+	PDObjectManager::Init();
+	PDInput::Init();
+	PDIniFile ini;
+	ini.ReadFile("data/global/inputs.ini");
+	if ( ! PDApp::GetInitData().mapConf.empty() ) {
+	  ini.SetToSection(PDApp::GetInitData().mapConf);
+	  std::cout << "Using configuration " << PDApp::GetInitData().mapConf << std::endl;
+	}
+	PDInput::FromFile(ini);
 }
 
 //#include "sdl_incs.h"

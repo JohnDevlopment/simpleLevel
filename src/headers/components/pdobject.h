@@ -23,45 +23,45 @@
 class PDObject {
 	// vector of components
 	typedef std::vector<PDComponent*> CompVect;
-	
+
 	// iterator and constant iterator of the vector of components
 	typedef CompVect::iterator CompVectItr;
 	typedef CompVect::const_iterator CompVectConstItr;
-	
+
 	CompVect m_components;
 	PDObjectType m_type;
 	int m_id;
-	
+
 	static int s_objectIDCounter;
-	
+
 	public:
-	
+
 	friend class PDApp;
 	friend class PDGamemodeManager;
-	
+
 	Point<int> m_pos;
 	PVector<float> m_vel;
 	bool m_isDead;
-	
+
 	// constructors
 	PDObject(PDObjectType);
 	PDObject(const PDObject&) = delete;
 	PDObject(PDObject&&);
-	
+
 	~PDObject();
-	
+
 	// update the object
 	void Update(float dt);
-	
+
 	// read object properties from file
 	void FromFile(PDIniFile& inifile);
-	
+
 	// add/remove components
 	void AddComponent(PDComponent* comp);
 	void RemoveComponent(PDComponent* comp);
 	void RemoveAllComponents();
 	void RemoveAllComponents(PDComponentType type);
-	
+
 	// accessors
 	int GetID() const {return m_id;}
 	PDObjectType GetType() const {return m_type;}

@@ -7,6 +7,7 @@
 #include "objecthelper.h"
 #include "textures.h"
 #include "camera.h"
+#include "input.hpp"
 
 PDSplashGamemode::PDSplashGamemode() : m_counter(0), m_maxTime(0)
 {

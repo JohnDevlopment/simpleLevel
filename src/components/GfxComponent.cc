@@ -54,7 +54,7 @@ void PDGfxComponent::FromFile(PDIniFile& inifile) {
 	  size[0] = m_texture->GetBlitSize().x();
 	}
 	else {
-	  size[0] = math::atoi(sVal);
+	  size[0] = math::strtoi(sVal);
 	}
 	
 	inifile.GetValue("height", sVal);
@@ -65,7 +65,7 @@ void PDGfxComponent::FromFile(PDIniFile& inifile) {
 	  size[1] = m_texture->GetBlitSize().y();
 	}
 	else {
-	  size[1] = math::atoi(sVal);
+	  size[1] = math::strtoi(sVal);
 	}
 	
 	m_texture->SetBlitSize(size);

@@ -36,6 +36,10 @@ void Log_Init() COLD;
 void Log_Cout(std::string str, ...);
 void Log_Cerr(std::string str, ...);
 
+void Log_SetError(const char* fmt, ...);
+const char* Log_GetError();
+#define Log_BadParam(param)	Log_SetError("bad parameter '%s'", param);
+
 // general output functions
 #define Log_Error(fmt, ...)	std::printf(fmt, __VA_ARGS__)
 //void Log_Error(std::string fmt, ...);

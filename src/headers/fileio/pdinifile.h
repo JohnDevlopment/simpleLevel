@@ -28,6 +28,7 @@ class PDIniFile {
 	
 	SectionMap m_sections;
 	KeyValMap* m_cursection;
+	char* m_file;
 	
 	// parse sections of the file
 	void ParseSection(StringMapPair& curSection, std::string& line, size_t& beg, size_t& end);
@@ -46,40 +47,48 @@ class PDIniFile {
 	public:
 	
 	PDIniFile();
-	~PDIniFile() {}
+	~PDIniFile() {
+		delete[] m_file;
+		m_file = nullptr;
+	}
 	
 	// read an INI file and parse its data
-	void ReadFile(const std::string& file);
+	int ReadFile(const std::string& file);
 	
 	// set INI file to the selected section
-	void SetToSection(const std::string& sec);
+	int SetToSection(const std::string& sec);
 	
+	// retrieve a value from the current section
 	template<typename T>
-	void GetValue(const std::string& key, T& value);
+	int GetValue(const std::string& key, T& value);
 };
 
 template<typename T>
-void PDIniFile::GetValue(const std::string& key, T& value) {
+int PDIniFile::GetValue(const std::string& key, T& value) {
 	KeyValMapCItr citr = m_cursection->find(key);
 	if (citr == m_cursection->cend()) {
 	  std::cerr << "Failed to locate key\n";
-	  return;
+	  return -1;
 	}
 	
 	std::stringstream ss(citr->second);
 	ss >> value;
+	
+	return 0;
 }
 
 template<>
-inline void PDIniFile::GetValue(const std::string& key, std::string& value)
+inline int PDIniFile::GetValue(const std::string& key, std::string& value)
 {
 	KeyValMapCItr citr = m_cursection->find(key);
 	if (citr == m_cursection->cend()) {
 	  std::cerr << "Failed to locate key\n";
-	  return;
+	  return -1;
 	}
 	
 	value = citr->second;
+	
+	return 0;
 }
 
 #endif /* PDINIFILE_H_INCLUDED */

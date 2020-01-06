@@ -14,7 +14,7 @@ namespace video {
 	SDL_Texture* LoadTexture(SDL_Renderer* ren, const char* file, const uint32_t* colorkey = nullptr);
 	SDL_Texture* LoadTexture(const char* file, const uint32_t* colorkey = nullptr);
 	
-	// TODO add description to NewColorScreen
+	/*  */
 	SDL_Texture* NewColorScreen(const uint8_t* color, int width, int height, uint32_t format, PatternArray& pattern);
 }
 
