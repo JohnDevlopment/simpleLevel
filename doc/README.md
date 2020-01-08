@@ -61,7 +61,7 @@ Music files and their starting positions in the loop.
 
 ### Instructions on how to use components
 
-####FadeComponent
+**FadeComponent**
 Use as a component inside of an object. The object's ini file must include a FadePattern section.
 The objects are listed below
 
